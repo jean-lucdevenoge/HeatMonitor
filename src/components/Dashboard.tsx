@@ -137,10 +137,10 @@ export const Dashboard: React.FC = () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                Add More Historical Data
+                {t('upload.addHistoricalData')}
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Upload additional CSV files to expand your historical analysis. Data will be combined and sorted chronologically.
+                {t('upload.additionalDataDescription')}
               </p>
               <FileUpload onFileSelect={handleFileUpload} isProcessing={isProcessing} />
             </div>

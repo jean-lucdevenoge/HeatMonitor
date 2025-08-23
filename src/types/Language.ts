@@ -225,6 +225,11 @@ export const translations: Translations = {
     de: 'CSV-Format erwartet',
     fr: 'Format CSV attendu'
   },
+  'upload.additionalDataDescription': {
+    en: 'Upload additional CSV files to expand your historical analysis. Data will be combined and sorted chronologically.',
+    de: 'Laden Sie zusätzliche CSV-Dateien hoch, um Ihre historische Analyse zu erweitern. Die Daten werden kombiniert und chronologisch sortiert.',
+    fr: 'Téléchargez des fichiers CSV supplémentaires pour étendre votre analyse historique. Les données seront combinées et triées chronologiquement.'
+  },
   
   // Status
   'status.burnerState': {
