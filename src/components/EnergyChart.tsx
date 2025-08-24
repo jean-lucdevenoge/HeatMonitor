@@ -105,6 +105,9 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
       for (let i = 0; i < chartLabels.length; i++) {
         const time = chartLabels[i].getTime();
         
+        const isActive = solarActivity[i] === 1;
+        const x = xScale.getPixelForValue(time);
+        
         // Only process points within visible range
         if (time < minTime || time > maxTime) continue;
         
