@@ -118,20 +118,23 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
       const minTime = xScale.min;
       const maxTime = xScale.max;
       
-      const visibleIndices: number[] = [];
-      chartLabels.forEach((label, index) => {
-        const time = label.getTime();
-        if (time >= minTime && time <= maxTime) {
-          visibleIndices.push(index);
-        }
-      });
-
       // Draw solar active periods (orange)
       let solarActiveStart = -1;
-      for (let i = 0; i < visibleIndices.length; i++) {
-        const index = visibleIndices[i];
-        const isSolarActive = solarActivity[index] === 1;
-        const time = chartLabels[index].getTime();
+      for (let i = 0; i < chartLabels.length; i++) {
+        const time = chartLabels[i].getTime();
+        
+        // Skip points outside visible range
+        if (time < minTime || time > maxTime) {
+          if (solarActiveStart !== -1) {
+            const x = time < minTime ? xScale.left : xScale.right;
+            ctx.fillStyle = 'rgba(249, 115, 22, 0.15)';
+            ctx.fillRect(solarActiveStart, chartArea.top, x - solarActiveStart, chartArea.height);
+            solarActiveStart = -1;
+          }
+          continue;
+        }
+        
+        const isSolarActive = solarActivity[i] === 1;
         const x = xScale.getPixelForValue(time);
         
         if (isSolarActive && solarActiveStart === -1) {
@@ -149,10 +152,21 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
 
       // Draw gas active periods (red) - overlay on top
       let gasActiveStart = -1;
-      for (let i = 0; i < visibleIndices.length; i++) {
-        const index = visibleIndices[i];
-        const isGasActive = gasActivity[index] === 1;
-        const time = chartLabels[index].getTime();
+      for (let i = 0; i < chartLabels.length; i++) {
+        const time = chartLabels[i].getTime();
+        
+        // Skip points outside visible range
+        if (time < minTime || time > maxTime) {
+          if (gasActiveStart !== -1) {
+            const x = time < minTime ? xScale.left : xScale.right;
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+            ctx.fillRect(gasActiveStart, chartArea.top, x - gasActiveStart, chartArea.height);
+            gasActiveStart = -1;
+          }
+          continue;
+        }
+        
+        const isGasActive = gasActivity[i] === 1;
         const x = xScale.getPixelForValue(time);
         
         if (isGasActive && gasActiveStart === -1) {
