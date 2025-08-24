@@ -658,4 +658,29 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
             <span className="font-medium">{t('chart.solarPowerLegend')}</span>
           </div>
           <p className="text-gray-600 mt-1">{t('chart.solarPowerDesc')}</p>
-          <p cla
+          <p className="font-semibold text-amber-700" data-combined-solar-legend-energy>
+            {visibleStats.totalSolarEnergy.toFixed(2)} kWh
+          </p>
+        </div>
+        <div className="bg-red-50 p-3 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+            <span className="font-medium">{t('chart.gasPowerLegend')}</span>
+          </div>
+          <p className="text-gray-600 mt-1">{t('chart.gasPowerDesc')}</p>
+          <p className="font-semibold text-red-700" data-combined-gas-legend-energy>
+            {visibleStats.totalGasEnergy.toFixed(2)} kWh
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
+        <div className="mb-2 flex flex-wrap gap-4" data-combined-detailed-stats>
+          <span className="font-semibold text-amber-700">
+            {t('chart.solarActive')}: {visibleStats.solarActivePercent}%
+          </span>
+          <span className="font-semibold text-red-700">
+            {t('chart.gasActive')}: {visibleStats.gasActivePercent}%
+          </span>
+          <span className="font-semibold text-amber-700">
+            {t('chart.totalSolarEnergy'
