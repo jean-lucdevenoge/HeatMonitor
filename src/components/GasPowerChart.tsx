@@ -114,11 +114,21 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
       
       for (let i = 0; i < chartLabels.length; i++) {
         const time = chartLabels[i].getTime();
+        
+        // Only process points within visible range, but still track activity state
+        if (time < minTime || time > maxTime) {
+          // Reset active state if we're outside visible range
+          if (activeStart !== -1 && time > maxTime) {
+            // End the active period at the right edge if it extends beyond
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+            ctx.fillRect(activeStart, chartArea.top, chartArea.right - activeStart, chartArea.height);
+            activeStart = -1;
+          }
+          continue;
+        }
+        
         const isActive = gasActivity[i] === 1;
         const x = xScale.getPixelForValue(time);
-        
-        // Only process points within visible range
-        if (time < minTime || time > maxTime) continue;
         
         if (isActive && activeStart === -1) {
           // Start of active period
