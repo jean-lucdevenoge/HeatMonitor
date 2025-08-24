@@ -68,31 +68,13 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
 
       ctx.save();
       
-      // Get the visible time range
-      const xScale = scales.x;
-      const minTime = xScale.min;
-      const maxTime = xScale.max;
-      
       // Draw background rectangles for solar active periods
       let activeStart = -1;
       
       for (let i = 0; i < chartLabels.length; i++) {
-        const time = chartLabels[i].getTime();
-        
-        // Only process points within visible range, but still track activity state
-        if (time < minTime || time > maxTime) {
-          // Reset active state if we're outside visible range
-          if (activeStart !== -1 && time > maxTime) {
-            // End the active period at the right edge if it extends beyond
-            ctx.fillStyle = 'rgba(249, 115, 22, 0.15)';
-            ctx.fillRect(activeStart, chartArea.top, chartArea.right - activeStart, chartArea.height);
-            activeStart = -1;
-          }
-          continue;
-        }
-        
         const isActive = solarActivity[i] === 1;
-        const x = xScale.getPixelForValue(time);
+        const time = chartLabels[i].getTime();
+        const x = scales.x.getPixelForValue(time);
         
         if (isActive && activeStart === -1) {
           // Start of active period
