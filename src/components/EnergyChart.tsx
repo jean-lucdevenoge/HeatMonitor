@@ -94,38 +94,41 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
 
       ctx.save();
       
-      // Draw background rectangles for solar active periods
+      // Process each data point and draw background rectangles
       let activeStart = -1;
       
-      // Use the original data length, not sampled data
-      const originalLabels = data.map(d => {
+      for (let i = 0; i < data.length; i++) {
+        const d = data[i];
+        
+        // Create date object for this data point
         const [day, month, year] = d.date.split('.');
         const [hours, minutes] = d.time.split(':');
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
-      });
-      
-      const originalSolarActivity = data.map(d => {
-        const isSolarActive = d.solarStatus.includes('Charging') || d.collectorPump === 'On';
-        return isSolarActive ? 1 : 0;
-      });
-      
-      for (let i = 0; i < originalLabels.length; i++) {
-        const isActive = originalSolarActivity[i] === 1;
-        const time = originalLabels[i].getTime();
+        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
+        const time = dateObj.getTime();
+        
+        // Get pixel position
         const x = scales.x.getPixelForValue(time);
         
-        if (isActive && activeStart === -1) {
+        // Skip points outside visible area but continue tracking active periods
+        if (x < chartArea.left || x > chartArea.right) {
+          continue;
+        }
+        
+        // Determine if solar is active
+        const isSolarActive = d.solarStatus.includes('Charging') || d.collectorPump === 'On';
+        
+        if (isSolarActive && activeStart === -1) {
           // Start of active period
           activeStart = x;
-        } else if (!isActive && activeStart !== -1) {
-          // End of active period
+        } else if (!isSolarActive && activeStart !== -1) {
+          // End of active period - draw rectangle
           ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
           ctx.fillRect(activeStart, chartArea.top, x - activeStart, chartArea.height);
           activeStart = -1;
         }
       }
       
-      // Handle case where active period extends to the end
+      // Handle case where active period extends to the end of visible area
       if (activeStart !== -1) {
         ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
         ctx.fillRect(activeStart, chartArea.top, chartArea.right - activeStart, chartArea.height);
