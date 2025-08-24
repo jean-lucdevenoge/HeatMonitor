@@ -210,8 +210,10 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
     const minTime = xScale.min;
     const maxTime = xScale.max;
 
-    const fullMin = chartLabels[0]?.getTime();
-    const fullMax = chartLabels[chartLabels.length - 1]?.getTime();
+    // Use current chartLabels length to avoid stale closure
+    const currentLabels = chart.data?.labels || [];
+    const fullMin = currentLabels[0]?.getTime?.() || currentLabels[0];
+    const fullMax = currentLabels[currentLabels.length - 1]?.getTime?.() || currentLabels[currentLabels.length - 1];
 
     if (fullMin == null || fullMax == null) {
       setZoomRange({ min: minTime, max: maxTime });
@@ -224,7 +226,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
     } else {
       setZoomRange({ min: minTime, max: maxTime });
     }
-  }, [chartLabels]);
+  }, []); // Remove chartLabels dependency to prevent callback recreation
 
   // Visible-range stats
   const getVisibleDataStats = React.useCallback(() => {
