@@ -78,21 +78,11 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
       
       for (let i = 0; i < chartLabels.length; i++) {
         const time = chartLabels[i].getTime();
-        
-        // Skip points outside visible range
-        if (time < minTime || time > maxTime) {
-          if (activeStart !== -1) {
-            // End active period at edge of visible area
-            const x = time < minTime ? xScale.left : xScale.right;
-            ctx.fillStyle = 'rgba(249, 115, 22, 0.15)';
-            ctx.fillRect(activeStart, chartArea.top, x - activeStart, chartArea.height);
-            activeStart = -1;
-          }
-          continue;
-        }
-        
         const isActive = solarActivity[i] === 1;
         const x = xScale.getPixelForValue(time);
+        
+        // Only process points within visible range
+        if (time < minTime || time > maxTime) continue;
         
         if (isActive && activeStart === -1) {
           // Start of active period
