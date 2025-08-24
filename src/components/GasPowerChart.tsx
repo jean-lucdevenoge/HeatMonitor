@@ -107,9 +107,21 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
       // Draw background rectangles for gas active periods
       let activeStart = -1;
       
-      for (let i = 0; i < chartLabels.length; i++) {
-        const isActive = gasActivity[i] === 1;
-        const time = chartLabels[i].getTime();
+      // Use the original data length, not sampled data
+      const originalLabels = data.map(d => {
+        const [day, month, year] = d.date.split('.');
+        const [hours, minutes] = d.time.split(':');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
+      });
+      
+      const originalGasActivity = data.map(d => {
+        const isGasActive = d.dhwPump === 'On';
+        return isGasActive ? 1 : 0;
+      });
+      
+      for (let i = 0; i < originalLabels.length; i++) {
+        const isActive = originalGasActivity[i] === 1;
+        const time = originalLabels[i].getTime();
         const x = scales.x.getPixelForValue(time);
         
         if (isActive && activeStart === -1) {

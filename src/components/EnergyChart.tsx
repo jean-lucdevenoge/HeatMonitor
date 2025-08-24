@@ -97,9 +97,21 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
       // Draw background rectangles for solar active periods
       let activeStart = -1;
       
-      for (let i = 0; i < chartLabels.length; i++) {
-        const isActive = solarActivity[i] === 1;
-        const time = chartLabels[i].getTime();
+      // Use the original data length, not sampled data
+      const originalLabels = data.map(d => {
+        const [day, month, year] = d.date.split('.');
+        const [hours, minutes] = d.time.split(':');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
+      });
+      
+      const originalSolarActivity = data.map(d => {
+        const isSolarActive = d.solarStatus.includes('Charging') || d.collectorPump === 'On';
+        return isSolarActive ? 1 : 0;
+      });
+      
+      for (let i = 0; i < originalLabels.length; i++) {
+        const isActive = originalSolarActivity[i] === 1;
+        const time = originalLabels[i].getTime();
         const x = scales.x.getPixelForValue(time);
         
         if (isActive && activeStart === -1) {

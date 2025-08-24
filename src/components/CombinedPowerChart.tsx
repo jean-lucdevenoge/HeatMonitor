@@ -114,11 +114,28 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
 
       ctx.save();
       
+      // Use the original data length, not sampled data
+      const originalLabels = data.map(d => {
+        const [day, month, year] = d.date.split('.');
+        const [hours, minutes] = d.time.split(':');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes));
+      });
+      
+      const originalSolarActivity = data.map(d => {
+        const isSolarActive = d.solarStatus.includes('Charging') || d.collectorPump === 'On';
+        return isSolarActive ? 1 : 0;
+      });
+      
+      const originalGasActivity = data.map(d => {
+        const isGasActive = d.dhwPump === 'On';
+        return isGasActive ? 1 : 0;
+      });
+      
       // Draw solar active periods (orange)
       let solarActiveStart = -1;
-      for (let i = 0; i < chartLabels.length; i++) {
-        const isSolarActive = solarActivity[i] === 1;
-        const time = chartLabels[i].getTime();
+      for (let i = 0; i < originalLabels.length; i++) {
+        const isSolarActive = originalSolarActivity[i] === 1;
+        const time = originalLabels[i].getTime();
         const x = scales.x.getPixelForValue(time);
         
         if (isSolarActive && solarActiveStart === -1) {
@@ -136,9 +153,9 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
 
       // Draw gas active periods (red) - overlay on top
       let gasActiveStart = -1;
-      for (let i = 0; i < chartLabels.length; i++) {
-        const isGasActive = gasActivity[i] === 1;
-        const time = chartLabels[i].getTime();
+      for (let i = 0; i < originalLabels.length; i++) {
+        const isGasActive = originalGasActivity[i] === 1;
+        const time = originalLabels[i].getTime();
         const x = scales.x.getPixelForValue(time);
         
         if (isGasActive && gasActiveStart === -1) {
