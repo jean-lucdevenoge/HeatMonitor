@@ -671,23 +671,6 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
           <p className="font-semibold text-red-700" data-combined-gas-legend-energy>
             {visibleStats.totalGasEnergy.toFixed(2)} kWh
           </p>
-        </div>
-      </div>
-
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-        <div className="mb-2 flex flex-wrap gap-4" data-combined-detailed-stats>
-          <span className="font-semibold text-amber-700">
-            {t('chart.solarActive')}: {visibleStats.solarActivePercent}%
-          </span>
-          <span className="font-semibold text-red-700">
-            {t('chart.gasActive')}: {visibleStats.gasActivePercent}%
-          </span>
-          <span className="font-semibold text-amber-700">
-            {t('chart.totalSolarEnergy')}: {visibleStats.totalSolarEnergy.toFixed(2)} kWh
-          </span>
-        </div>
-      </div>
-
       <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
         <div className="mb-2 flex flex-wrap gap-4" data-combined-detailed-stats>
           <span className="font-semibold text-amber-700">
