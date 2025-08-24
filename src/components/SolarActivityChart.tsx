@@ -86,7 +86,8 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
   const [startMarker, setStartMarker] = React.useState<number | null>(null);
   const [endMarker, setEndMarker] = React.useState<number | null>(null);
   const [isMarkingMode, setIsMarkingMode] = React.useState(false);
-  const [zoomRange, setZoomRange] = React.useState<{ min: number; max: number } | null>(null);
+  const zoomRangeRef = React.useRef<{ min: number; max: number } | null>(null);
+  const [, forceUpdate] = React.useState(0);
 
   // Sample every 5th point for performance
   const sampledData = React.useMemo(
@@ -210,27 +211,28 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
     const minTime = xScale.min;
     const maxTime = xScale.max;
 
-    // Use current chartLabels length to avoid stale closure
     const currentLabels = chart.data?.labels || [];
-    const fullMin = currentLabels[0]?.getTime?.() || currentLabels[0];
-    const fullMax = currentLabels[currentLabels.length - 1]?.getTime?.() || currentLabels[currentLabels.length - 1];
+    if (currentLabels.length === 0) return;
+    
+    const fullMin = currentLabels[0]?.getTime ? currentLabels[0].getTime() : currentLabels[0];
+    const fullMax = currentLabels[currentLabels.length - 1]?.getTime ? 
+      currentLabels[currentLabels.length - 1].getTime() : 
+      currentLabels[currentLabels.length - 1];
 
-    if (fullMin == null || fullMax == null) {
-      setZoomRange({ min: minTime, max: maxTime });
-      return;
-    }
-
-    // If we’re at full extent, clear zoom state
-    if (minTime <= fullMin && maxTime >= fullMax) {
-      setZoomRange(null);
+    // Check if we're at full extent (with small tolerance)
+    const tolerance = (fullMax - fullMin) * 0.01; // 1% tolerance
+    if (minTime <= fullMin + tolerance && maxTime >= fullMax - tolerance) {
+      zoomRangeRef.current = null;
     } else {
-      setZoomRange({ min: minTime, max: maxTime });
+      zoomRangeRef.current = { min: minTime, max: maxTime };
     }
-  }, []); // Remove chartLabels dependency to prevent callback recreation
+    
+    forceUpdate(prev => prev + 1);
+  }, []);
 
   // Visible-range stats
   const getVisibleDataStats = React.useCallback(() => {
-    if (!zoomRange || chartLabels.length === 0) {
+    if (!zoomRangeRef.current || chartLabels.length === 0) {
       const totalPoints = sampledData.length;
       const activePoints = solarActivity.filter((s) => s === 1).length;
       const solarEfficiencyPercent =
@@ -241,7 +243,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
     const visibleIndices: number[] = [];
     chartLabels.forEach((label, index) => {
       const time = label.getTime();
-      if (time >= zoomRange.min && time <= zoomRange.max) {
+      if (time >= zoomRangeRef.current!.min && time <= zoomRangeRef.current!.max) {
         visibleIndices.push(index);
       }
     });
@@ -258,7 +260,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
       totalPoints: visibleTotalPoints,
       solarEfficiencyPercent: visibleSolarEfficiencyPercent,
     };
-  }, [zoomRange, chartLabels, sampledData.length, solarActivity]);
+  }, [chartLabels, sampledData.length, solarActivity]);
 
   const chartData = React.useMemo(
     () => ({
@@ -387,7 +389,8 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
     const chartInstance = ChartJS.getChart('solar-activity-chart');
     if (chartInstance) {
       (chartInstance as any).resetZoom();
-      setZoomRange(null);
+      zoomRangeRef.current = null;
+      forceUpdate(prev => prev + 1);
     }
   };
 
@@ -443,7 +446,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
           <h3 className="text-lg font-semibold">{t('chart.solarActivity')}</h3>
           <p className="text-sm text-gray-600">
             {t('chart.solarActivePercent')}: {visibleStats.solarEfficiencyPercent}% ({visibleStats.activePoints}/{visibleStats.totalPoints} {t('chart.dataPoints')})
-            {zoomRange && <span className="ml-2 text-blue-600 font-medium">(Zoomed View)</span>}
+            {zoomRangeRef.current && <span className="ml-2 text-blue-600 font-medium">(Zoomed View)</span>}
           </p>
         </div>
         <div className="flex space-x-2">
