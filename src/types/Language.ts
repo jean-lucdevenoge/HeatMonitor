@@ -581,11 +581,6 @@ export const translations: Translations = {
     de: 'Hinweis',
     fr: 'Note'
   },
-  'chart.gasPowerCalculationNote': {
-    en: 'Gas power is calculated only when the DHW pump is active (pump on)',
-    de: 'Gasleistung wird nur berechnet, wenn die Warmwasserpumpe aktiv ist (Pumpe an)',
-    fr: 'La puissance gaz n\'est calculée que lorsque la pompe ECS est active (pompe en marche)'
-  },
   'chart.gasPowerFormula': {
     en: 'Gas power: 10 kW × Boiler Modulation (%) ÷ 100',
     de: 'Gasleistung: 10 kW × Kesselmodulation (%) ÷ 100',
