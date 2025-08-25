@@ -188,10 +188,8 @@ serve(async (req) => {
     }
 
     // Calculate and store daily energy data for ALL dates in database
-    if (importedCount > 0) {
-      console.log('📊 Recalculating daily energy data for all dates...')
-      await calculateAllDailyEnergy(supabaseClient)
-    }
+    console.log('📊 Recalculating daily energy data for all dates...')
+    await calculateAllDailyEnergy(supabaseClient)
 
     const result = {
       success: true,
