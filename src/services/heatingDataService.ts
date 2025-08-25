@@ -59,9 +59,18 @@ export class HeatingDataService {
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
     try {
+      // Calculate 3 days ago date in DD.MM.YYYY format
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const day = String(threeDaysAgo.getDate()).padStart(2, '0');
+      const month = String(threeDaysAgo.getMonth() + 1).padStart(2, '0');
+      const year = threeDaysAgo.getFullYear();
+      const threeDaysAgoStr = `${day}.${month}.${year}`;
+
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
+        .gte('date', threeDaysAgoStr)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -85,27 +94,7 @@ export class HeatingDataService {
         return a.time.localeCompare(b.time);
       });
       
-      // Filter to only include data from the past 3 days
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      threeDaysAgo.setHours(0, 0, 0, 0); // Start of day 3 days ago
-      
-      const filteredData = sortedData.filter(point => {
-        // Convert DD.MM.YYYY to Date object
-        const [day, month, year] = point.date.split('.');
-        const [hours, minutes] = point.time.split(':');
-        const pointDate = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes)
-        );
-        
-        return pointDate >= threeDaysAgo;
-      });
-      
-      return filteredData;
+      return sortedData;
     } catch (error) {
       console.error('Error in getAllData:', error);
       return [];
