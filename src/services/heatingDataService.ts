@@ -63,8 +63,7 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     .from('heating_data')
     .select('*')
     .order('date')
-    .order('time')
-    .limit(10000); // Add explicit high limit to check if there's a default limit
+    .order('time');
 
   if (error) {
     console.error('Error fetching heating data:', error);
