@@ -80,7 +80,7 @@ export class HeatingDataService {
 
       const dataPoints = data.map(this.dbRowToDataPoint);
       
-      // Sort by date and time to ensure proper chronological order, then filter to past 3 days
+      // Sort by date and time to ensure proper chronological order
       const sortedData = dataPoints.sort((a, b) => {
         // Convert DD.MM.YYYY to YYYY-MM-DD for proper sorting
         const dateA = a.date.split('.').reverse().join('-');
@@ -95,26 +95,6 @@ export class HeatingDataService {
       });
       
       return sortedData;
-    } catch (error) {
-      console.error('Error in getAllData:', error);
-      return [];
-    }
-  }
-
-  // Insert new heating data points (with duplicate prevention)
-  static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
-    if (dataPoints.length === 0) {
-      return { inserted: 0, duplicates: 0 };
-    }
-
-    try {
-      // Convert to database format
-      const dbRows = dataPoints.map(this.dataPointToDbRow);
-      
-      // Use upsert to handle duplicates gracefully
-      const { data, error } = await supabase
-        .from('heating_data')
-        .upsert(dbRows, { 
           onConflict: 'date,time',
           ignoreDuplicates: true 
         })
