@@ -300,6 +300,29 @@ export const AnalyticsDashboard: React.FC = () => {
     },
   };
 
+  const activityTimeChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Date',
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Time (minutes)',
+        },
+      },
+    },
+  };
   const pieChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -507,7 +530,7 @@ export const AnalyticsDashboard: React.FC = () => {
                   <h3 className="text-lg font-bold text-gray-900">{t('analytics.systemActivityTime')}</h3>
                 </div>
                 <div style={{ height: '300px' }}>
-                  <Bar data={activityTimeData} options={barChartOptions} />
+                  <Bar data={activityTimeData} options={activityTimeChartOptions} />
                 </div>
               </div>
             </div>
