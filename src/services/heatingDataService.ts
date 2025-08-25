@@ -59,48 +59,31 @@ export class HeatingDataService {
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
     try {
-      console.log('Fetching all heating data from database with proper date sorting...');
+      console.log('Fetching all heating data from database...');
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching heating data:', error);
         throw error;
       }
 
-      console.log(`Total records fetched from DB: ${data.length}`);
+      console.log(`Total records fetched from DB: ${data?.length || 0}`);
       if (data.length > 0) {
-        console.log('First DB record:', data[0]);
-        console.log('Last DB record:', data[data.length - 1]);
+        console.log('First 3 DB records:', data.slice(0, 3));
+        console.log('Last 3 DB records:', data.slice(-3));
+        console.log('Sample dates from DB:', data.slice(0, 10).map(d => ({ date: d.date, time: d.time })));
       }
 
       // Convert to data points
       const dataPoints = data.map(this.dbRowToDataPoint);
-
-      // Sort properly by converting DD.MM.YYYY to comparable format
-      const sortedData = dataPoints.sort((a, b) => {
-        // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-        const dateA = a.date.split('.').reverse().join('-');
-        const dateB = b.date.split('.').reverse().join('-');
-        
-        if (dateA !== dateB) {
-          return dateA.localeCompare(dateB);
-        }
-        
-        // If dates are the same, sort by time
-        return a.time.localeCompare(b.time);
-      });
-
-      console.log(`After sorting - Total points: ${sortedData.length}`);
-      if (sortedData.length > 0) {
-        console.log('First sorted record:', sortedData[0]);
-        console.log('Last sorted record:', sortedData[sortedData.length - 1]);
-      }
-
-      return sortedData;
+      
+      console.log('Converted data points - first 3:', dataPoints.slice(0, 3));
+      console.log('Converted data points - last 3:', dataPoints.slice(-3));
+      
+      return dataPoints;
     } catch (error) {
       console.error('Error in getAllData:', error);
       throw error;
