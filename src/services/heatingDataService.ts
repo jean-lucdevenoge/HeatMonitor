@@ -62,8 +62,8 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   const { data, error } = await supabase
     .from('heating_data')
     .select('*')
-    .order('date', { ascending: true, nullsLast: true })
-    .order('time', { ascending: true, nullsLast: true });
+    .order('date', { ascending: true })
+    .order('time', { ascending: true });
 
   if (error) {
     console.error('Error fetching heating data:', error);
@@ -75,7 +75,22 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     return [];
   }
 
+  // Convert to data points and sort properly by date/time
   const dataPoints = data.map(this.dbRowToDataPoint);
+  
+  // Sort properly by converting DD.MM.YYYY to comparable format
+  dataPoints.sort((a, b) => {
+    // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+    const dateA = a.date.split('.').reverse().join('-');
+    const dateB = b.date.split('.').reverse().join('-');
+    
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB);
+    }
+    
+    // If dates are the same, sort by time
+    return a.time.localeCompare(b.time);
+  });
 
   console.log(`Total records: ${dataPoints.length}`);
   console.log('First record:', dataPoints[0]);
