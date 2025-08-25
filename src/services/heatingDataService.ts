@@ -59,10 +59,11 @@ export class HeatingDataService {
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
     try {
-      console.log('Fetching ALL heating data from database...');
+      console.log('Fetching all heating data from database...');
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
+        .order('date', { ascending: true })
         .order('time', { ascending: true });
 
       if (error) {
@@ -70,42 +71,12 @@ export class HeatingDataService {
         throw error;
       }
 
-      console.log(`Total records in database: ${data.length}`);
-      if (data.length > 0) {
-        console.log('Full date range in database:', {
-          first: `${data[0].date} ${data[0].time}`,
-          last: `${data[data.length - 1].date} ${data[data.length - 1].time}`
-        });
-      }
+      console.log(`Total records fetched: ${data.length}`);
 
       const dataPoints = data.map(this.dbRowToDataPoint);
       
       // Sort by date and time to ensure proper chronological order
-      const sortedData = dataPoints.sort((a, b) => {
-        // Convert DD.MM.YYYY to YYYY-MM-DD for proper sorting
-        const dateA = a.date.split('.').reverse().join('-');
-        const dateB = b.date.split('.').reverse().join('-');
-        
-        if (dateA !== dateB) {
-          return dateA.localeCompare(dateB);
-        }
-        
-        // If dates are the same, sort by time
-        return a.time.localeCompare(b.time);
-      });
-      
-      // Now filter to past 3 days after sorting
-      const now = new Date();
-      const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
-      console.log(`Final sorted data: ${sortedData.length} records`);
-      if (sortedData.length > 0) {
-        console.log('Final date range:', {
-          first: `${sortedData[0].date} ${sortedData[0].time}`,
-          last: `${sortedData[sortedData.length - 1].date} ${sortedData[sortedData.length - 1].time}`
-        });
-      }
-      
-      return sortedData;
+      return data.map(this.dbRowToDataPoint);
     } catch (error) {
       console.error('Error in getAllData:', error);
       throw error;
