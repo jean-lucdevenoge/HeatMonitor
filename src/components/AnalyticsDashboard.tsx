@@ -129,7 +129,7 @@ export const AnalyticsDashboard: React.FC = () => {
     labels: chartLabels,
     datasets: [
       {
-        label: 'Solar Energy (kWh)',
+        label: t('analytics.solarEnergy'),
         data: energyData.map(day => day.solar_energy_kwh),
         borderColor: '#F59E0B',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -138,7 +138,7 @@ export const AnalyticsDashboard: React.FC = () => {
         fill: true,
       },
       {
-        label: 'Gas Energy (kWh)',
+        label: t('analytics.gasEnergy'),
         data: energyData.map(day => day.gas_energy_kwh),
         borderColor: '#DC2626',
         backgroundColor: 'rgba(220, 38, 38, 0.1)',
@@ -154,14 +154,14 @@ export const AnalyticsDashboard: React.FC = () => {
     labels: chartLabels,
     datasets: [
       {
-        label: 'Solar Energy',
+        label: t('analytics.solarEnergy'),
         data: energyData.map(day => day.solar_energy_kwh),
         backgroundColor: '#F59E0B',
         borderColor: '#D97706',
         borderWidth: 1,
       },
       {
-        label: 'Gas Energy',
+        label: t('analytics.gasEnergy'),
         data: energyData.map(day => day.gas_energy_kwh),
         backgroundColor: '#DC2626',
         borderColor: '#B91C1C',
@@ -172,7 +172,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
   // Energy distribution pie chart
   const energyDistributionData = {
-    labels: ['Solar Energy', 'Gas Energy'],
+    labels: [t('analytics.solarEnergy'), t('analytics.gasEnergy')],
     datasets: [
       {
         data: [totalSolarEnergy, totalGasEnergy],
@@ -188,7 +188,7 @@ export const AnalyticsDashboard: React.FC = () => {
     labels: chartLabels,
     datasets: [
       {
-        label: 'Avg Collector Temp (°C)',
+        label: t('analytics.avgCollectorTemp'),
         data: energyData.map(day => day.avg_collector_temp),
         borderColor: '#F59E0B',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -197,7 +197,7 @@ export const AnalyticsDashboard: React.FC = () => {
         yAxisID: 'y',
       },
       {
-        label: 'Avg Outside Temp (°C)',
+        label: t('analytics.avgOutsideTemp'),
         data: energyData.map(day => day.avg_outside_temp),
         borderColor: '#3B82F6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -206,7 +206,7 @@ export const AnalyticsDashboard: React.FC = () => {
         yAxisID: 'y',
       },
       {
-        label: 'Avg DHW Temp (°C)',
+        label: t('analytics.avgDhwTemp'),
         data: energyData.map(day => day.avg_dhw_temp),
         borderColor: '#DC2626',
         backgroundColor: 'rgba(220, 38, 38, 0.1)',
@@ -222,14 +222,14 @@ export const AnalyticsDashboard: React.FC = () => {
     labels: chartLabels,
     datasets: [
       {
-        label: 'Solar Active (minutes)',
+        label: t('analytics.solarActiveMinutes'),
         data: energyData.map(day => day.solar_active_minutes),
         backgroundColor: '#F59E0B',
         borderColor: '#D97706',
         borderWidth: 1,
       },
       {
-        label: 'Gas Active (minutes)',
+        label: t('analytics.gasActiveMinutes'),
         data: energyData.map(day => day.gas_active_minutes),
         backgroundColor: '#DC2626',
         borderColor: '#B91C1C',
@@ -368,7 +368,7 @@ export const AnalyticsDashboard: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center space-x-3">
           <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-          <span className="text-gray-600">Loading analytics data...</span>
+          <span className="text-gray-600">{t('analytics.loadingData')}</span>
         </div>
       </div>
     );
@@ -379,13 +379,13 @@ export const AnalyticsDashboard: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Error Loading Data</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('analytics.errorLoadingData')}</h3>
           <p className="text-gray-500 mb-4">{error}</p>
           <button
             onClick={loadEnergyData}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
-            Retry
+            {t('analytics.retry')}
           </button>
         </div>
       </div>
@@ -399,9 +399,9 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-4">
             <BarChart3 className="w-8 h-8 text-blue-600" />
-            <h2 className="text-3xl font-bold text-gray-900">Energy Analytics Dashboard</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{t('analytics.title')}</h2>
           </div>
-          <p className="text-gray-600">Daily energy calculations and system performance metrics</p>
+          <p className="text-gray-600">{t('analytics.subtitle')}</p>
         </div>
 
         {/* Summary Cards */}
@@ -409,9 +409,9 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-amber-100 text-sm font-medium">Total Solar Energy</p>
+                <p className="text-amber-100 text-sm font-medium">{t('analytics.totalSolarEnergy')}</p>
                 <p className="text-2xl font-bold">{totalSolarEnergy.toFixed(1)} kWh</p>
-                <p className="text-amber-100 text-sm">{solarPercentage.toFixed(1)}% of total</p>
+                <p className="text-amber-100 text-sm">{solarPercentage.toFixed(1)}% {t('analytics.ofTotal')}</p>
               </div>
               <Sun className="w-8 h-8 text-amber-100" />
             </div>
@@ -420,9 +420,9 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-red-100 text-sm font-medium">Total Gas Energy</p>
+                <p className="text-red-100 text-sm font-medium">{t('analytics.totalGasEnergy')}</p>
                 <p className="text-2xl font-bold">{totalGasEnergy.toFixed(1)} kWh</p>
-                <p className="text-red-100 text-sm">{gasPercentage.toFixed(1)}% of total</p>
+                <p className="text-red-100 text-sm">{gasPercentage.toFixed(1)}% {t('analytics.ofTotal')}</p>
               </div>
               <Flame className="w-8 h-8 text-red-100" />
             </div>
@@ -431,9 +431,9 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">Total Combined Energy</p>
+                <p className="text-blue-100 text-sm font-medium">{t('analytics.totalCombinedEnergy')}</p>
                 <p className="text-2xl font-bold">{totalCombinedEnergy.toFixed(1)} kWh</p>
-                <p className="text-blue-100 text-sm">{energyData.length} days analyzed</p>
+                <p className="text-blue-100 text-sm">{energyData.length} {t('analytics.daysAnalyzed')}</p>
               </div>
               <Zap className="w-8 h-8 text-blue-100" />
             </div>
@@ -442,9 +442,9 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">Avg Daily Energy</p>
+                <p className="text-green-100 text-sm font-medium">{t('analytics.avgDailyEnergy')}</p>
                 <p className="text-2xl font-bold">{avgDailyEnergy.toFixed(1)} kWh</p>
-                <p className="text-green-100 text-sm">per day</p>
+                <p className="text-green-100 text-sm">{t('analytics.perDay')}</p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-100" />
             </div>
@@ -458,7 +458,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <LineChart className="w-6 h-6 text-blue-600" />
-                <h3 className="text-xl font-bold text-gray-900">Energy Trends Over Time</h3>
+                <h3 className="text-xl font-bold text-gray-900">{t('analytics.energyTrendsOverTime')}</h3>
               </div>
               <div style={{ height: '400px' }}>
                 <Line data={energyTrendData} options={lineChartOptions} />
@@ -471,7 +471,7 @@ export const AnalyticsDashboard: React.FC = () => {
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <BarChart3 className="w-6 h-6 text-green-600" />
-                  <h3 className="text-lg font-bold text-gray-900">Daily Energy Breakdown</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('analytics.dailyEnergyBreakdown')}</h3>
                 </div>
                 <div style={{ height: '300px' }}>
                   <Bar data={dailyEnergyData} options={barChartOptions} />
@@ -482,7 +482,7 @@ export const AnalyticsDashboard: React.FC = () => {
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <PieChart className="w-6 h-6 text-purple-600" />
-                  <h3 className="text-lg font-bold text-gray-900">Total Energy Distribution</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('analytics.totalEnergyDistribution')}</h3>
                 </div>
                 <div style={{ height: '300px' }}>
                   <Doughnut data={energyDistributionData} options={pieChartOptions} />
@@ -493,7 +493,7 @@ export const AnalyticsDashboard: React.FC = () => {
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <TrendingUp className="w-6 h-6 text-orange-600" />
-                  <h3 className="text-lg font-bold text-gray-900">Temperature Trends</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('analytics.temperatureTrends')}</h3>
                 </div>
                 <div style={{ height: '300px' }}>
                   <Line data={temperatureTrendData} options={temperatureChartOptions} />
@@ -504,7 +504,7 @@ export const AnalyticsDashboard: React.FC = () => {
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <BarChart3 className="w-6 h-6 text-indigo-600" />
-                  <h3 className="text-lg font-bold text-gray-900">System Activity Time</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('analytics.systemActivityTime')}</h3>
                 </div>
                 <div style={{ height: '300px' }}>
                   <Bar data={activityTimeData} options={barChartOptions} />
@@ -518,10 +518,10 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mt-12">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Daily Energy Calculations</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('analytics.dailyEnergyCalculations')}</h3>
               <div className="flex items-center space-x-2 text-sm text-gray-500">
                 <Calendar className="w-4 h-4" />
-                <span>{energyData.length} days of data</span>
+                <span>{energyData.length} {t('analytics.daysOfData')}</span>
               </div>
             </div>
           </div>
@@ -534,49 +534,49 @@ export const AnalyticsDashboard: React.FC = () => {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('date')}
                   >
-                    Date {getSortIcon('date')}
+                    {t('analytics.date')} {getSortIcon('date')}
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('solar_energy_kwh')}
                   >
-                    Solar Energy (kWh) {getSortIcon('solar_energy_kwh')}
+                    {t('analytics.solarEnergyKwh')} {getSortIcon('solar_energy_kwh')}
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('gas_energy_kwh')}
                   >
-                    Gas Energy (kWh) {getSortIcon('gas_energy_kwh')}
+                    {t('analytics.gasEnergyKwh')} {getSortIcon('gas_energy_kwh')}
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('total_energy_kwh')}
                   >
-                    Total Energy (kWh) {getSortIcon('total_energy_kwh')}
+                    {t('analytics.totalEnergyKwh')} {getSortIcon('total_energy_kwh')}
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('solar_active_minutes')}
                   >
-                    Solar Active (min) {getSortIcon('solar_active_minutes')}
+                    {t('analytics.solarActiveMin')} {getSortIcon('solar_active_minutes')}
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('gas_active_minutes')}
                   >
-                    Gas Active (min) {getSortIcon('gas_active_minutes')}
+                    {t('analytics.gasActiveMin')} {getSortIcon('gas_active_minutes')}
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('avg_collector_temp')}
                   >
-                    Avg Collector (°C) {getSortIcon('avg_collector_temp')}
+                    {t('analytics.avgCollectorC')} {getSortIcon('avg_collector_temp')}
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('avg_outside_temp')}
                   >
-                    Avg Outside (°C) {getSortIcon('avg_outside_temp')}
+                    {t('analytics.avgOutsideC')} {getSortIcon('avg_outside_temp')}
                   </th>
                 </tr>
               </thead>
@@ -622,8 +622,8 @@ export const AnalyticsDashboard: React.FC = () => {
           {energyData.length === 0 && (
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">No Energy Data Available</h3>
-              <p className="text-gray-500">Energy calculations will appear here once data is processed.</p>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('analytics.noEnergyData')}</h3>
+              <p className="text-gray-500">{t('analytics.energyCalculationsWillAppear')}</p>
             </div>
           )}
         </div>
