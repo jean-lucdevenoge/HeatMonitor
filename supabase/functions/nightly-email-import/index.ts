@@ -124,27 +124,15 @@ serve(async (req) => {
                 continue
               }
               
-              console.log(`CSV content preview (first 500 chars):`)
-              console.log(csvContent.substring(0, 500))
-              console.log('--- End CSV preview ---')
-              
               // Parse CSV data
               const parsedData = parseHeatingCSV(csvContent)
               console.log(`Parsed ${parsedData.length} data points from CSV`)
               
-              if (parsedData.length > 0) {
-                console.log('Sample parsed data (first 3 records):')
-                parsedData.slice(0, 3).forEach((record, index) => {
-                  console.log(`Record ${index + 1}:`, JSON.stringify(record, null, 2))
-                })
-              } else {
+              if (parsedData.length === 0) {
                 console.log('❌ No data was parsed from CSV - checking CSV format...')
                 const lines = csvContent.split('\n')
                 console.log(`CSV has ${lines.length} lines`)
-                console.log('First 10 lines of CSV:')
-                lines.slice(0, 10).forEach((line, index) => {
-                  console.log(`Line ${index + 1}: "${line}"`)
-                })
+                console.log('CSV structure analysis completed (data not logged for privacy)')
               }
               
               if (parsedData.length > 0) {
@@ -162,8 +150,6 @@ serve(async (req) => {
                 if (error) {
                   console.error('❌ Database insertion error:', error)
                   console.error('Error details:', JSON.stringify(error, null, 2))
-                  console.log('Sample data that failed to insert:')
-                  console.log(JSON.stringify(parsedData.slice(0, 2), null, 2))
                   throw error
                 }
 
@@ -559,9 +545,7 @@ function parseHeatingCSV(csvContent: string) {
     
     if (dataStartIndex === -1) {
       console.log('❌ No suitable header found, showing first 20 lines for debugging:')
-      lines.slice(0, 20).forEach((line, index) => {
-        console.log(`Line ${index}: "${line}"`)
-      })
+      console.log('CSV structure analysis completed (content not logged for privacy)')
       return []
     }
   }
@@ -573,21 +557,11 @@ function parseHeatingCSV(csvContent: string) {
   
   console.log(`Found ${dataLines.length} valid data lines after filtering`)
   if (dataLines.length > 0) {
-    console.log('Sample data lines:')
-    dataLines.slice(0, 3).forEach((line, index) => {
-      console.log(`Data line ${index + 1}: "${line}"`)
-    })
+    console.log('Valid data lines found (content not logged for privacy)')
   }
   
   const parsedRecords = dataLines.map((line, index) => {
     const values = line.split(';').map(v => v.trim())
-    
-    if (index < 3) {
-      console.log(`Parsing line ${index + 1} with ${values.length} values:`)
-      values.forEach((val, valIndex) => {
-        console.log(`  Value ${valIndex}: "${val}"`)
-      })
-    }
     
     const record = {
       date: values[0] || '',
@@ -611,10 +585,6 @@ function parseHeatingCSV(csvContent: string) {
       return_temp: parseFloat(values[18]) || 0,
       boiler_pump_speed: parseInt(values[19]) || 0,
       sensor_temp: parseFloat(values[20]) || 0,
-    }
-    
-    if (index < 3) {
-      console.log(`Parsed record ${index + 1}:`, JSON.stringify(record, null, 2))
     }
     
     return record
