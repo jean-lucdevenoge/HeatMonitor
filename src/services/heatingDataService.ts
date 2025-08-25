@@ -58,7 +58,11 @@ export class HeatingDataService {
 
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
+    try {
       console.log('Fetching ALL heating data from database...');
+      const { data, error } = await supabase
+        .from('heating_data')
+        .select('*')
         .order('time', { ascending: true });
 
       if (error) {
