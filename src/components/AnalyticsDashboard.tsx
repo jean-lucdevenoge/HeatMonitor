@@ -578,12 +578,6 @@ export const AnalyticsDashboard: React.FC = () => {
                   >
                     Avg Outside (°C) {getSortIcon('avg_outside_temp')}
                   </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('data_points_count')}
-                  >
-                    Data Points {getSortIcon('data_points_count')}
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -618,9 +612,6 @@ export const AnalyticsDashboard: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {day.avg_outside_temp.toFixed(1)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {day.data_points_count}
                     </td>
                   </tr>
                 ))}
