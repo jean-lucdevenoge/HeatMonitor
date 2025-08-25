@@ -87,11 +87,8 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
   const [endMarker, setEndMarker] = React.useState<number | null>(null);
   const [isMarkingMode, setIsMarkingMode] = React.useState(false);
 
-  // Sample every 5th point for performance
-  const sampledData = React.useMemo(
-    () => data.filter((_, index) => index % 5 === 0),
-    [data]
-  );
+  // Use all data - no sampling
+  const sampledData = React.useMemo(() => data, [data]);
 
   // Time labels
   const chartLabels: Date[] = React.useMemo(() => {

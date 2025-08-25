@@ -94,11 +94,8 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
   const [, setTick] = React.useState(0);
   const forceUpdate = React.useCallback(() => setTick((v) => v + 1), []);
 
-  // Sample every 5th point for better performance
-  const sampledData = React.useMemo(
-    () => data.filter((_, index) => index % 5 === 0),
-    [data]
-  );
+  // Use all data - no sampling
+  const sampledData = React.useMemo(() => data, [data]);
 
   // Convert date/time to proper Date objects
   const chartLabels: Date[] = React.useMemo(() => {

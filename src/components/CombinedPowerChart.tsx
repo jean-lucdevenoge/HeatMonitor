@@ -96,11 +96,8 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
   const [isMarkingMode, setIsMarkingMode] = React.useState(false);
   const zoomRangeRef = React.useRef<{ min: number; max: number } | null>(null);
 
-  // Sample every 5th point for performance
-  const sampledData = React.useMemo(
-    () => data.filter((_, index) => index % 5 === 0),
-    [data]
-  );
+  // Use all data - no sampling
+  const sampledData = React.useMemo(() => data, [data]);
 
   // Time labels
   const chartLabels: Date[] = React.useMemo(() => {

@@ -139,7 +139,7 @@ export const Dashboard: React.FC = () => {
                   <BarChart3 className="w-6 h-6" />
                   <div>
                     <h3 className="text-lg font-semibold">{t('dashboard.historicalData')}</h3>
-                    <p className="opacity-90">{t('dashboard.analyzingPoints')} {dataCount} {t('dashboard.dataPoints')}</p>
+                    <p className="opacity-90">{t('dashboard.analyzingPoints')} {heatingData.length} {t('dashboard.dataPoints')} (DB: {dataCount})</p>
                   </div>
                 </div>
                 
