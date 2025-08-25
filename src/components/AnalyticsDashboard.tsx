@@ -1,8 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, TrendingUp, Zap, Flame, Sun, BarChart3, AlertCircle } from 'lucide-react';
+import { Calendar, TrendingUp, Zap, Flame, Sun, BarChart3, AlertCircle, PieChart, LineChart } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  TimeScale,
+} from 'chart.js';
+import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
+import 'chartjs-adapter-date-fns';
 import { HeatingDataService } from '../services/heatingDataService';
 import { EnergyCalculationsService } from '../services/energyCalculationsService';
 import { useLanguage } from '../contexts/LanguageContext';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  TimeScale
+);
 
 interface EnergyCalculation {
   id: string;
@@ -85,6 +113,237 @@ export const AnalyticsDashboard: React.FC = () => {
   
   const solarPercentage = totalCombinedEnergy > 0 ? (totalSolarEnergy / totalCombinedEnergy) * 100 : 0;
   const gasPercentage = totalCombinedEnergy > 0 ? (totalGasEnergy / totalCombinedEnergy) * 100 : 0;
+
+  // Prepare chart data
+  const chartLabels = energyData.map(day => {
+    try {
+      const date = new Date(day.date);
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+    } catch {
+      return day.date;
+    }
+  });
+
+  // Energy trend chart data
+  const energyTrendData = {
+    labels: chartLabels,
+    datasets: [
+      {
+        label: 'Solar Energy (kWh)',
+        data: energyData.map(day => day.solar_energy_kwh),
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: 'Gas Energy (kWh)',
+        data: energyData.map(day => day.gas_energy_kwh),
+        borderColor: '#DC2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+      },
+    ],
+  };
+
+  // Daily total energy bar chart
+  const dailyEnergyData = {
+    labels: chartLabels,
+    datasets: [
+      {
+        label: 'Solar Energy',
+        data: energyData.map(day => day.solar_energy_kwh),
+        backgroundColor: '#F59E0B',
+        borderColor: '#D97706',
+        borderWidth: 1,
+      },
+      {
+        label: 'Gas Energy',
+        data: energyData.map(day => day.gas_energy_kwh),
+        backgroundColor: '#DC2626',
+        borderColor: '#B91C1C',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Energy distribution pie chart
+  const energyDistributionData = {
+    labels: ['Solar Energy', 'Gas Energy'],
+    datasets: [
+      {
+        data: [totalSolarEnergy, totalGasEnergy],
+        backgroundColor: ['#F59E0B', '#DC2626'],
+        borderColor: ['#D97706', '#B91C1C'],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Temperature trends
+  const temperatureTrendData = {
+    labels: chartLabels,
+    datasets: [
+      {
+        label: 'Avg Collector Temp (°C)',
+        data: energyData.map(day => day.avg_collector_temp),
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Avg Outside Temp (°C)',
+        data: energyData.map(day => day.avg_outside_temp),
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Avg DHW Temp (°C)',
+        data: energyData.map(day => day.avg_dhw_temp),
+        borderColor: '#DC2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        yAxisID: 'y',
+      },
+    ],
+  };
+
+  // Activity time chart
+  const activityTimeData = {
+    labels: chartLabels,
+    datasets: [
+      {
+        label: 'Solar Active (minutes)',
+        data: energyData.map(day => day.solar_active_minutes),
+        backgroundColor: '#F59E0B',
+        borderColor: '#D97706',
+        borderWidth: 1,
+      },
+      {
+        label: 'Gas Active (minutes)',
+        data: energyData.map(day => day.gas_active_minutes),
+        backgroundColor: '#DC2626',
+        borderColor: '#B91C1C',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Chart options
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+      },
+    },
+    scales: {
+      x: {
+        display: true,
+        title: {
+          display: true,
+          text: 'Date',
+        },
+      },
+      y: {
+        display: true,
+        title: {
+          display: true,
+          text: 'Energy (kWh)',
+        },
+      },
+    },
+    interaction: {
+      mode: 'nearest' as const,
+      axis: 'x' as const,
+      intersect: false,
+    },
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+    },
+    scales: {
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Date',
+        },
+      },
+      y: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Energy (kWh)',
+        },
+      },
+    },
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const label = context.label || '';
+            const value = context.parsed;
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${label}: ${value.toFixed(2)} kWh (${percentage}%)`;
+          }
+        }
+      }
+    },
+  };
+
+  const temperatureChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Date',
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Temperature (°C)',
+        },
+      },
+    },
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -191,6 +450,69 @@ export const AnalyticsDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Charts Section */}
+        {energyData.length > 0 && (
+          <div className="space-y-8">
+            {/* Energy Trends Chart */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <LineChart className="w-6 h-6 text-blue-600" />
+                <h3 className="text-xl font-bold text-gray-900">Energy Trends Over Time</h3>
+              </div>
+              <div style={{ height: '400px' }}>
+                <Line data={energyTrendData} options={lineChartOptions} />
+              </div>
+            </div>
+
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Daily Energy Stacked Bar Chart */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <BarChart3 className="w-6 h-6 text-green-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Daily Energy Breakdown</h3>
+                </div>
+                <div style={{ height: '300px' }}>
+                  <Bar data={dailyEnergyData} options={barChartOptions} />
+                </div>
+              </div>
+
+              {/* Energy Distribution Pie Chart */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <PieChart className="w-6 h-6 text-purple-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Total Energy Distribution</h3>
+                </div>
+                <div style={{ height: '300px' }}>
+                  <Doughnut data={energyDistributionData} options={pieChartOptions} />
+                </div>
+              </div>
+
+              {/* Temperature Trends */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <TrendingUp className="w-6 h-6 text-orange-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Temperature Trends</h3>
+                </div>
+                <div style={{ height: '300px' }}>
+                  <Line data={temperatureTrendData} options={temperatureChartOptions} />
+                </div>
+              </div>
+
+              {/* Activity Time Chart */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <BarChart3 className="w-6 h-6 text-indigo-600" />
+                  <h3 className="text-lg font-bold text-gray-900">System Activity Time</h3>
+                </div>
+                <div style={{ height: '300px' }}>
+                  <Bar data={activityTimeData} options={barChartOptions} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Data Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
