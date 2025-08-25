@@ -1,0 +1,5 @@
+# Schedule the function to run daily at 6:00 AM UTC
+# Cron format: minute hour day month day-of-week
+- name: "daily-data-collection"
+  schedule: "0 6 * * *"  # Every day at 6:00 AM UTC
+  function: "daily-data-collection"
