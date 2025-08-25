@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { HeatingDataPoint, SystemMetrics } from '../types/HeatingData';
 import { MetricsCards } from './MetricsCards';
 import { TemperatureChart } from './TemperatureChart';
@@ -11,6 +12,7 @@ import { GasPowerChart } from './GasPowerChart';
 import { CombinedPowerChart } from './CombinedPowerChart';
 import { FileUpload } from './FileUpload';
 import { parseHeatingCSV, calculateMetrics } from '../utils/csvParser';
+import { HeatingDataService } from '../services/heatingDataService';
 import { Calendar, TrendingUp, AlertCircle, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -20,6 +22,33 @@ export const Dashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dataCount, setDataCount] = useState(0);
+
+  // Load data from database on component mount
+  useEffect(() => {
+    loadDataFromDatabase();
+  }, []);
+
+  const loadDataFromDatabase = async () => {
+    setIsLoading(true);
+    try {
+      const data = await HeatingDataService.getAllData();
+      const count = await HeatingDataService.getDataCount();
+      
+      if (data.length > 0) {
+        const calculatedMetrics = calculateMetrics(data);
+        setHeatingData(data);
+        setMetrics(calculatedMetrics);
+        setDataCount(count);
+        setLastUpdated(new Date().toLocaleString());
+      }
+    } catch (error) {
+      console.error('Error loading data from database:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
@@ -28,38 +57,25 @@ export const Dashboard: React.FC = () => {
       const text = await file.text();
       const parsedData = parseHeatingCSV(text);
       
-      // Filter out duplicate data points based on date and time
-      const newDataPoints = parsedData.filter(newPoint => {
-        return !heatingData.some(existingPoint => 
-          existingPoint.date === newPoint.date && 
-          existingPoint.time === newPoint.time
-        );
-      });
+      if (parsedData.length === 0) {
+        console.log('No valid data found in CSV file');
+        setIsProcessing(false);
+        return;
+      }
       
-      // Only add if there are new data points
-      if (newDataPoints.length === 0) {
+      // Save to database (duplicates will be handled by the service)
+      const result = await HeatingDataService.insertData(parsedData);
+      
+      if (result.inserted === 0) {
         console.log('No new data points found - file may have already been uploaded');
         setIsProcessing(false);
         return;
       }
       
-      // Combine new data with existing data
-      const combinedData = [...heatingData, ...newDataPoints];
+      // Reload data from database to get the updated dataset
+      await loadDataFromDatabase();
       
-      // Sort by date and time to maintain chronological order
-      combinedData.sort((a, b) => {
-        const dateA = new Date(`${a.date.split('.').reverse().join('-')} ${a.time}`);
-        const dateB = new Date(`${b.date.split('.').reverse().join('-')} ${b.time}`);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      const calculatedMetrics = calculateMetrics(combinedData);
-      
-      setHeatingData(combinedData);
-      setMetrics(calculatedMetrics);
-      setLastUpdated(new Date().toLocaleString());
-      
-      console.log(`Added ${newDataPoints.length} new data points`);
+      console.log(`Added ${result.inserted} new data points, ${result.duplicates} duplicates skipped`);
     } catch (error) {
       console.error('Error parsing CSV:', error);
     } finally {
@@ -90,14 +106,22 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* File Upload */}
-        {heatingData.length === 0 && (
+        {heatingData.length === 0 && !isLoading && (
           <div className="mb-8">
             <FileUpload onFileSelect={handleFileUpload} isProcessing={isProcessing} />
           </div>
         )}
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="mb-8 flex items-center justify-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mr-3"></div>
+            <span className="text-gray-600">Loading heating data...</span>
+          </div>
+        )}
+
         {/* Status Banner */}
-        {heatingData.length > 0 && (
+        {heatingData.length > 0 && !isLoading && (
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
@@ -105,7 +129,7 @@ export const Dashboard: React.FC = () => {
                   <BarChart3 className="w-6 h-6" />
                   <div>
                     <h3 className="text-lg font-semibold">{t('dashboard.historicalData')}</h3>
-                    <p className="opacity-90">{t('dashboard.analyzingPoints')} {heatingData.length} {t('dashboard.dataPoints')}</p>
+                    <p className="opacity-90">{t('dashboard.analyzingPoints')} {dataCount} {t('dashboard.dataPoints')}</p>
                   </div>
                 </div>
                 
@@ -121,7 +145,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Main Content */}
-        {heatingData.length > 0 && metrics ? (
+        {heatingData.length > 0 && metrics && !isLoading ? (
           <div className="space-y-8">
             {/* Metrics Cards */}
             <MetricsCards metrics={metrics} />
@@ -145,7 +169,7 @@ export const Dashboard: React.FC = () => {
               <FileUpload onFileSelect={handleFileUpload} isProcessing={isProcessing} />
             </div>
           </div>
-        ) : !isProcessing && (
+        ) : !isProcessing && !isLoading && (
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
