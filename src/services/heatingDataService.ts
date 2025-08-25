@@ -63,39 +63,20 @@ export class HeatingDataService {
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('date', { ascending: true })
+        .order('time', { ascending: true });
 
       if (error) {
         console.error('Error fetching heating data:', error);
         throw error;
       }
 
-      console.log(`Total records fetched from DB: ${data?.length || 0}`);
-      if (data.length > 0) {
-        console.log('First 3 DB records:', data.slice(0, 3));
-        console.log('Last 3 DB records:', data.slice(-3));
-        console.log('Sample dates from DB:', data.slice(0, 10).map(d => ({ date: d.date, time: d.time })));
-      }
-
       // Convert to data points
       const dataPoints = data.map(this.dbRowToDataPoint);
       
-      console.log('Converted data points - first 3:', dataPoints.slice(0, 3));
-      console.log('Converted data points - last 3:', dataPoints.slice(-3));
-      
-      return dataPoints;
-    } catch (error) {
-      console.error('Error in getAllData:', error);
-      throw error;
-    }
-  }
-
-  // Insert heating data into database
-  static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
-    try {
-      const dbRows = dataPoints.map(this.dataPointToDbRow);
-
-      const { data, error } = await supabase
+      console.log(`Total records: ${dataPoints.length}`);
+      console.log('First record:', dataPoints[0]);
+      console.log('Last record:', dataPoints[dataPoints.length - 1]);
         .from('heating_data')
         .upsert(dbRows, {
           onConflict: 'date,time',
