@@ -59,23 +59,25 @@ export class HeatingDataService {
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
     try {
-      // Calculate 3 days ago date in DD.MM.YYYY format
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      const day = String(threeDaysAgo.getDate()).padStart(2, '0');
-      const month = String(threeDaysAgo.getMonth() + 1).padStart(2, '0');
-      const year = threeDaysAgo.getFullYear();
-      const threeDaysAgoStr = `${day}.${month}.${year}`;
+      // Get all data first to see what we have
+      console.log('Fetching all heating data from database...');
 
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
-        .gte('date', threeDaysAgoStr)
         .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching heating data:', error);
         throw error;
+      }
+
+      console.log(`Total records in database: ${data.length}`);
+      if (data.length > 0) {
+        console.log('Date range in database:', {
+          first: `${data[0].date} ${data[0].time}`,
+          last: `${data[data.length - 1].date} ${data[data.length - 1].time}`
+        });
       }
 
       const dataPoints = data.map(this.dbRowToDataPoint);
@@ -94,7 +96,32 @@ export class HeatingDataService {
         return a.time.localeCompare(b.time);
       });
       
-      return sortedData;
+      // Now filter to past 3 days after sorting
+      const now = new Date();
+      const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+      
+      const filteredData = sortedData.filter(point => {
+        const [day, month, year] = point.date.split('.');
+        const [hours, minutes] = point.time.split(':');
+        const pointDate = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes)
+        );
+        return pointDate >= threeDaysAgo;
+      });
+      
+      console.log(`Filtered to past 3 days: ${filteredData.length} records`);
+      if (filteredData.length > 0) {
+        console.log('Filtered date range:', {
+          first: `${filteredData[0].date} ${filteredData[0].time}`,
+          last: `${filteredData[filteredData.length - 1].date} ${filteredData[filteredData.length - 1].time}`
+        });
+      }
+      
+      return filteredData;
     } catch (error) {
       console.error('Error in getAllData:', error);
       throw error;

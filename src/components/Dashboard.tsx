@@ -50,7 +50,7 @@ export const Dashboard: React.FC = () => {
           firstTime: data[0]?.time,
           lastDate: data[data.length - 1]?.date,
           lastTime: data[data.length - 1]?.time,
-          dateRange: `${data[0]?.date} - ${data[data.length - 1]?.date}`
+          dateRange: `${data[0]?.date} ${data[0]?.time} - ${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`
         });
       }
     } catch (error) {
