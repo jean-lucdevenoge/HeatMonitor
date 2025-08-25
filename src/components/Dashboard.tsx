@@ -10,7 +10,6 @@ import { SolarActivityChart } from './SolarActivityChart';
 import { EnergyChart } from './EnergyChart';
 import { GasPowerChart } from './GasPowerChart';
 import { CombinedPowerChart } from './CombinedPowerChart';
-import { DebugTable } from './DebugTable';
 import { FileUpload } from './FileUpload';
 import { parseHeatingCSV, calculateMetrics } from '../utils/csvParser';
 import { HeatingDataService } from '../services/heatingDataService';
@@ -179,9 +178,6 @@ export const Dashboard: React.FC = () => {
               <GasPowerChart data={heatingData} />
               <CombinedPowerChart data={heatingData} />
             </div>
-
-            {/* Debug Table */}
-            <DebugTable data={heatingData} />
 
             {/* Additional Upload for New Data */}
             <div className="bg-white rounded-xl shadow-lg p-6">
