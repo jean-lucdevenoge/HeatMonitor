@@ -50,7 +50,9 @@ export const Dashboard: React.FC = () => {
           firstTime: data[0]?.time,
           lastDate: data[data.length - 1]?.date,
           lastTime: data[data.length - 1]?.time,
-          dateRange: `${data[0]?.date} ${data[0]?.time} - ${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`
+          dateRange: `${data[0]?.date} ${data[0]?.time} - ${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`,
+          firstRecord: data[0],
+          lastRecord: data[data.length - 1]
         });
       }
     } catch (error) {
@@ -146,7 +148,7 @@ export const Dashboard: React.FC = () => {
                 <div className="text-right">
                   <p className="text-sm opacity-90">{t('dashboard.dataRange')}</p>
                   <p className="font-semibold">
-                    {heatingData[0]?.date} - {heatingData[heatingData.length - 1]?.date}
+                    {heatingData.length > 0 ? `${heatingData[0].date} - ${heatingData[heatingData.length - 1].date}` : 'No data'}
                   </p>
                 </div>
               </div>
