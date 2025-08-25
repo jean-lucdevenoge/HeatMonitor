@@ -515,7 +515,7 @@ export const AnalyticsDashboard: React.FC = () => {
         )}
 
         {/* Data Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mt-12">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Daily Energy Calculations</h3>
