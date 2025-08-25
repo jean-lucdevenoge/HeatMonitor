@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { LanguageProvider } from './contexts/LanguageContext';
 
 function App() {
@@ -11,14 +12,7 @@ function App() {
       case 'dashboard':
         return <Dashboard />;
       case 'analytics':
-        return (
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Analytics</h2>
-              <p className="text-gray-600">Advanced analytics features coming soon</p>
-            </div>
-          </div>
-        );
+        return <AnalyticsDashboard />;
       case 'files':
         return (
           <div className="min-h-screen bg-gray-50 flex items-center justify-center">
