@@ -59,7 +59,7 @@ export class HeatingDataService {
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
     try {
-      console.log('Fetching all heating data from database...');
+      console.log('Fetching all heating data from database with proper date sorting...');
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
@@ -71,12 +71,36 @@ export class HeatingDataService {
         throw error;
       }
 
-      console.log(`Total records fetched: ${data.length}`);
+      console.log(`Total records fetched from DB: ${data.length}`);
+      if (data.length > 0) {
+        console.log('First DB record:', data[0]);
+        console.log('Last DB record:', data[data.length - 1]);
+      }
 
+      // Convert to data points
       const dataPoints = data.map(this.dbRowToDataPoint);
-      
-      // Sort by date and time to ensure proper chronological order
-      return data.map(this.dbRowToDataPoint);
+
+      // Sort properly by converting DD.MM.YYYY to comparable format
+      const sortedData = dataPoints.sort((a, b) => {
+        // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+        const dateA = a.date.split('.').reverse().join('-');
+        const dateB = b.date.split('.').reverse().join('-');
+        
+        if (dateA !== dateB) {
+          return dateA.localeCompare(dateB);
+        }
+        
+        // If dates are the same, sort by time
+        return a.time.localeCompare(b.time);
+      });
+
+      console.log(`After sorting - Total points: ${sortedData.length}`);
+      if (sortedData.length > 0) {
+        console.log('First sorted record:', sortedData[0]);
+        console.log('Last sorted record:', sortedData[sortedData.length - 1]);
+      }
+
+      return sortedData;
     } catch (error) {
       console.error('Error in getAllData:', error);
       throw error;
