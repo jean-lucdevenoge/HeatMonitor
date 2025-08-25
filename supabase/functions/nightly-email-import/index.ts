@@ -138,47 +138,25 @@ serve(async (req) => {
               if (parsedData.length > 0) {
                 console.log(`Attempting to insert ${parsedData.length} records into database...`)
                 
-                // Insert data into database
-                const { data: insertedData, error } = await supabaseClient
+                // Upsert data into database (handles both insert and update)
+                const { data: upsertedData, error } = await supabaseClient
                   .from('heating_data')
-                  .insert(parsedData)
+                  .upsert(parsedData, {
+                    onConflict: 'date,time',
+                    ignoreDuplicates: false
+                  })
                   .select('id')
-                  .onConflict('date,time')
-                  .ignoreDuplicates()
 
-                // If insert fails due to conflicts, try upsert instead
-                if (error && error.code === '23505') {
-                  console.log('Some records already exist, trying upsert...')
-                  const { data: upsertedData, error: upsertError } = await supabaseClient
-                    .from('heating_data')
-                    .upsert(parsedData, {
-                      onConflict: 'date,time',
-                      ignoreDuplicates: false
-                    })
-                    .select('id')
-
-                  if (upsertError) {
-                    console.error('❌ Database upsert error:', upsertError)
-                    console.error('Upsert Error details:', JSON.stringify(upsertError, null, 2))
-                    throw upsertError
-                  }
-
-                  const inserted = upsertedData?.length || 0
-                  const duplicates = parsedData.length - inserted
-                  console.log(`✅ Successfully upserted ${inserted} records, ${duplicates} were duplicates from ${csvAttachment.filename}`)
-                  importedCount += inserted
-                } else if (error) {
+                if (error) {
                   console.error('❌ Database insertion error:', error)
                   console.error('Error details:', JSON.stringify(error, null, 2))
                   throw error
                 } else {
-                  const inserted = insertedData?.length || 0
+                  const inserted = upsertedData?.length || 0
                   const duplicates = parsedData.length - inserted
-                  console.log(`✅ Successfully inserted ${inserted} new records, ${duplicates} duplicates skipped from ${csvAttachment.filename}`)
-                  console.log(`Database response data length: ${insertedData?.length || 0}`)
+                  console.log(`✅ Successfully upserted ${inserted} records, ${duplicates} were duplicates from ${csvAttachment.filename}`)
                   importedCount += inserted
                 }
-                  .select('id')
 
               } else {
                 console.log(`❌ No valid data found in ${csvAttachment.filename}`)
