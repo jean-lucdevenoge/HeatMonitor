@@ -77,6 +77,23 @@ export class HeatingDataService {
       console.log(`Total records: ${dataPoints.length}`);
       console.log('First record:', dataPoints[0]);
       console.log('Last record:', dataPoints[dataPoints.length - 1]);
+      
+      return dataPoints;
+    } catch (error) {
+      console.error('Error fetching heating data:', error);
+      throw error;
+    }
+  }
+
+  // Insert heating data points into database
+  static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
+    try {
+      console.log(`Inserting ${dataPoints.length} data points...`);
+      
+      // Convert to database format
+      const dbRows = dataPoints.map(this.dataPointToDbRow);
+      
+      const { data, error } = await supabase
         .from('heating_data')
         .upsert(dbRows, {
           onConflict: 'date,time',
