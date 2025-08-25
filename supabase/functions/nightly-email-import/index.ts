@@ -21,6 +21,12 @@ interface EmailAttachment {
   content: string; // base64 encoded
 }
 
+interface AzureTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -36,22 +42,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Email configuration
-    const emailConfig = {
+    // Azure/Outlook configuration
+    const azureConfig = {
       email: 'solar@devenoge.net',
-      password: Deno.env.get('EMAIL_PASSWORD') ?? '', // Set this in Supabase secrets
-      imapHost: 'imap.gmail.com', // Adjust based on your email provider
-      imapPort: 993,
-      smtpHost: 'smtp.gmail.com', // For moving emails
-      smtpPort: 587
+      tenantId: Deno.env.get('AZURE_TENANT_ID') ?? '',
+      clientId: Deno.env.get('AZURE_CLIENT_ID') ?? '',
+      clientSecret: Deno.env.get('AZURE_CLIENT_SECRET') ?? '',
     }
 
-    if (!emailConfig.password) {
-      throw new Error('EMAIL_PASSWORD environment variable not set')
+    if (!azureConfig.tenantId || !azureConfig.clientId || !azureConfig.clientSecret) {
+      throw new Error('Azure credentials not properly configured. Need AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET')
     }
 
+    // Get Azure access token
+    const accessToken = await getAzureAccessToken(azureConfig)
+    
     // Connect to email inbox
-    const emails = await checkInbox(emailConfig)
+    const emails = await checkInbox(azureConfig, accessToken)
     console.log(`Found ${emails.length} emails to process`)
 
     let processedCount = 0
@@ -111,7 +118,7 @@ serve(async (req) => {
         }
 
         // Move email to Backup folder
-        await moveEmailToBackup(emailConfig, email.id)
+        await moveEmailToBackup(azureConfig, accessToken, email.id)
         console.log(`Moved email to Backup folder: ${email.subject}`)
         processedCount++
 
@@ -119,7 +126,7 @@ serve(async (req) => {
         console.error(`Error processing email ${email.id}:`, emailError)
         // Still try to move to backup even if processing failed
         try {
-          await moveEmailToBackup(emailConfig, email.id)
+          await moveEmailToBackup(azureConfig, accessToken, email.id)
         } catch (moveError) {
           console.error(`Failed to move email to backup:`, moveError)
         }
@@ -163,46 +170,84 @@ serve(async (req) => {
   }
 })
 
-// Function to check inbox for new emails
-async function checkInbox(config: any): Promise<EmailMessage[]> {
-  // This is a simplified example - you'll need to implement actual IMAP connection
-  // You can use libraries like 'npm:imap' or make HTTP requests to email APIs
-  
+// Function to get Azure access token using client credentials flow
+async function getAzureAccessToken(config: any): Promise<string> {
   try {
-    // Example using Gmail API (you'd need to set up OAuth2)
-    // For production, consider using Gmail API, Outlook API, or IMAP libraries
+    console.log('Getting Azure access token...')
     
+    const tokenUrl = `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`
+    
+    const body = new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      scope: 'https://graph.microsoft.com/.default',
+      grant_type: 'client_credentials'
+    })
+
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString()
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to get Azure token: ${response.status} ${errorText}`)
+    }
+
+    const tokenData: AzureTokenResponse = await response.json()
+    console.log('Successfully obtained Azure access token')
+    
+    return tokenData.access_token
+    
+  } catch (error) {
+    console.error('Error getting Azure access token:', error)
+    throw error
+  }
+}
+
+// Function to check inbox for new emails using Microsoft Graph API
+async function checkInbox(config: any, accessToken: string): Promise<EmailMessage[]> {
+  try {
     console.log('Connecting to email inbox...')
     
-    // Placeholder - implement actual email fetching logic here
-    // This could be:
-    // 1. Gmail API with OAuth2
-    // 2. IMAP connection with username/password
-    // 3. Microsoft Graph API for Outlook
-    // 4. Third-party email service API
+    // Get messages from inbox using Microsoft Graph API
+    const messagesUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/messages?$filter=isRead eq false&$expand=attachments`
     
-    // For now, return empty array - you'll need to implement based on your email provider
-    const emails: EmailMessage[] = []
-    
-    // Example structure of what the implementation should return:
-    /*
-    const emails: EmailMessage[] = [
-      {
-        id: 'email-123',
-        subject: 'Heating System Data',
-        from: 'system@heating.com',
-        date: new Date().toISOString(),
-        body: 'Daily heating system report attached',
-        attachments: [
-          {
-            filename: 'heating-data.csv',
-            contentType: 'text/csv',
-            content: 'base64-encoded-csv-content'
-          }
-        ]
+    const response = await fetch(messagesUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
       }
-    ]
-    */
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to fetch emails: ${response.status} ${errorText}`)
+    }
+
+    const data = await response.json()
+    const messages = data.value || []
+    
+    console.log(`Found ${messages.length} unread emails`)
+    
+    // Convert to our EmailMessage format
+    const emails: EmailMessage[] = messages.map((msg: any) => ({
+      id: msg.id,
+      subject: msg.subject || 'No Subject',
+      from: msg.from?.emailAddress?.address || 'Unknown',
+      date: msg.receivedDateTime,
+      body: msg.body?.content || '',
+      attachments: (msg.attachments || []).map((att: any) => ({
+        filename: att.name || 'unknown.txt',
+        contentType: att.contentType || 'application/octet-stream',
+        content: att.contentBytes || '' // This is already base64 encoded from Graph API
+      }))
+    }))
+    
+    console.log(`Processed ${emails.length} emails for import`)
     
     return emails
     
@@ -212,18 +257,69 @@ async function checkInbox(config: any): Promise<EmailMessage[]> {
   }
 }
 
-// Function to move email to Backup folder
-async function moveEmailToBackup(config: any, emailId: string): Promise<void> {
+// Function to move email to Backup folder using Microsoft Graph API
+async function moveEmailToBackup(config: any, accessToken: string, emailId: string): Promise<void> {
   try {
     console.log(`Moving email ${emailId} to Backup folder...`)
     
-    // Implement email moving logic here
-    // This depends on your email provider:
-    // 1. Gmail API: labels.modify to add/remove labels
-    // 2. IMAP: MOVE command
-    // 3. Outlook API: move message to folder
+    // First, get or create the Backup folder
+    const foldersUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/mailFolders`
     
-    // Placeholder implementation
+    const foldersResponse = await fetch(foldersUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!foldersResponse.ok) {
+      throw new Error(`Failed to get folders: ${foldersResponse.status}`)
+    }
+
+    const foldersData = await foldersResponse.json()
+    let backupFolder = foldersData.value.find((folder: any) => folder.displayName === 'Backup')
+    
+    // Create Backup folder if it doesn't exist
+    if (!backupFolder) {
+      console.log('Creating Backup folder...')
+      const createFolderResponse = await fetch(foldersUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          displayName: 'Backup'
+        })
+      })
+      
+      if (createFolderResponse.ok) {
+        backupFolder = await createFolderResponse.json()
+        console.log('Backup folder created successfully')
+      } else {
+        throw new Error(`Failed to create Backup folder: ${createFolderResponse.status}`)
+      }
+    }
+    
+    // Move the email to Backup folder
+    const moveUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/messages/${emailId}/move`
+    
+    const moveResponse = await fetch(moveUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        destinationId: backupFolder.id
+      })
+    })
+
+    if (!moveResponse.ok) {
+      const errorText = await moveResponse.text()
+      throw new Error(`Failed to move email: ${moveResponse.status} ${errorText}`)
+    }
+    
     console.log(`Email ${emailId} moved to Backup folder`)
     
   } catch (error) {

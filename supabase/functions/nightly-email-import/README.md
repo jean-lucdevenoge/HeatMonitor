@@ -14,30 +14,48 @@ This Supabase Edge Function runs every night at 1:00 AM to:
 In your Supabase project dashboard, go to Settings > Edge Functions and add:
 
 ```
-EMAIL_PASSWORD=your_email_app_password
+AZURE_TENANT_ID=your_azure_tenant_id
+AZURE_CLIENT_ID=your_azure_client_id
+AZURE_CLIENT_SECRET=your_azure_client_secret
 ```
 
-**Important**: Use an App Password, not your regular email password for security.
+**Important**: These are your Azure App Registration credentials for accessing Microsoft Graph API.
 
-### 2. Configure Email Provider
+### 2. Azure App Registration Setup
 
-The function currently has placeholder implementations for email operations. You need to implement one of these approaches:
+You need to create an Azure App Registration to access the Outlook email:
 
-#### Option A: Gmail API (Recommended)
-- Set up OAuth2 credentials in Google Cloud Console
-- Use Gmail API to read emails and manage labels
-- More secure and reliable than IMAP
+1. **Go to Azure Portal** (portal.azure.com)
+2. **Navigate to** Azure Active Directory > App registrations
+3. **Click "New registration"**
+   - Name: "Heating System Email Import"
+   - Supported account types: "Accounts in this organizational directory only"
+   - Redirect URI: Leave blank for now
+4. **Note down** the Application (client) ID and Directory (tenant) ID
+5. **Create a client secret**:
+   - Go to "Certificates & secrets"
+   - Click "New client secret"
+   - Add description and set expiration
+   - **Copy the secret value immediately** (you won't see it again)
+6. **Configure API permissions**:
+   - Go to "API permissions"
+   - Click "Add a permission"
+   - Select "Microsoft Graph"
+   - Choose "Application permissions"
+   - Add these permissions:
+     - `Mail.Read` (to read emails)
+     - `Mail.ReadWrite` (to move emails)
+     - `MailboxSettings.Read` (to access mailbox)
+   - Click "Grant admin consent"
 
-#### Option B: IMAP Connection
-- Use a library like `npm:imap` to connect directly
-- Requires app password or OAuth2
-- Works with most email providers
+### 3. Email Account Configuration
 
-#### Option C: Microsoft Graph API
-- For Outlook/Office 365 accounts
-- Requires Azure app registration
+Make sure the `solar@devenoge.net` account:
+- Is part of your Azure AD tenant
+- Has the necessary permissions
+- Is accessible via Microsoft Graph API
 
-### 3. Deploy the Function
+### 4. Deploy the Function
 
 ```bash
 # Deploy the function
@@ -47,35 +65,28 @@ supabase functions deploy nightly-email-import
 supabase functions schedule nightly-email-import --cron "0 1 * * *"
 ```
 
-### 4. Test the Function
+### 5. Test the Function
 
 ```bash
 # Test manually
 supabase functions invoke nightly-email-import
 ```
 
-## Email Provider Setup
+## How It Works
 
-### Gmail Setup
-1. Enable 2-factor authentication
-2. Generate an App Password:
-   - Go to Google Account settings
-   - Security > 2-Step Verification > App passwords
-   - Generate password for "Mail"
-3. Use this app password in the `EMAIL_PASSWORD` environment variable
-
-### Outlook/Office 365 Setup
-1. Enable IMAP in Outlook settings
-2. Use OAuth2 or app password
-3. Update IMAP/SMTP server settings in the code
+1. **Authentication**: Uses Azure Client Credentials flow to get an access token
+2. **Email Reading**: Uses Microsoft Graph API to read unread emails from the inbox
+3. **CSV Processing**: Checks each email for CSV attachments and imports the data
+4. **Email Management**: Moves all processed emails to a "Backup" folder
+5. **Error Handling**: Continues processing even if individual emails fail
 
 ## Security Notes
 
-- Never commit email passwords to code
+- Never commit Azure credentials to code
 - Use environment variables for all credentials
-- Consider using OAuth2 instead of passwords
-- Regularly rotate app passwords
+- Regularly rotate client secrets
 - Monitor function logs for security issues
+- Use least-privilege permissions in Azure
 
 ## Customization
 
@@ -85,6 +96,7 @@ You can modify the function to:
 - Handle different CSV formats
 - Add email notifications on success/failure
 - Implement retry logic for failed imports
+- Process emails from different folders
 
 ## Monitoring
 
@@ -96,3 +108,4 @@ The function will log:
 - Number of records imported
 - Any errors encountered
 - Email movement operations
+- Azure authentication status
