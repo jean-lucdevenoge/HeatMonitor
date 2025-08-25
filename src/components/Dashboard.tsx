@@ -43,16 +43,26 @@ export const Dashboard: React.FC = () => {
         setDataCount(count);
         setLastUpdated(new Date().toLocaleString());
         
-        // Log data range for debugging  
-        console.log('Data loaded (all data):', {
+        // Log data range for debugging
+        console.log('=== DASHBOARD DATA LOADED ===');
+        console.log('Total points:', data.length);
+        console.log('First record:', data[0]);
+        console.log('Last record:', data[data.length - 1]);
+        console.log('Date range display will show:', {
+          start: `${data[0]?.date} ${data[0]?.time}`,
+          end: `${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`
+        });
+        console.log('Raw data sample (first 3):', data.slice(0, 3));
+        console.log('Raw data sample (last 3):', data.slice(-3));
+        console.log('================================');
+        
+        console.log('Data loaded (summary):', {
           totalPoints: data.length,
           firstDate: data[0]?.date,
           firstTime: data[0]?.time,
           lastDate: data[data.length - 1]?.date,
           lastTime: data[data.length - 1]?.time,
-          dateRange: `${data[0]?.date} ${data[0]?.time} - ${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`,
-          firstRecord: data[0],
-          lastRecord: data[data.length - 1]
+          dateRange: `${data[0]?.date} ${data[0]?.time} - ${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`
         });
       }
     } catch (error) {
@@ -148,7 +158,7 @@ export const Dashboard: React.FC = () => {
                 <div className="text-right">
                   <p className="text-sm opacity-90">{t('dashboard.dataRange')}</p>
                   <p className="font-semibold">
-                    {heatingData.length > 0 ? `${heatingData[0].date} - ${heatingData[heatingData.length - 1].date}` : 'No data'}
+                    {heatingData.length > 0 ? `${heatingData[0]?.date} ${heatingData[0]?.time} - ${heatingData[heatingData.length - 1]?.date} ${heatingData[heatingData.length - 1]?.time}` : 'No data'}
                   </p>
                 </div>
               </div>
