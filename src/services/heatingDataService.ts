@@ -62,8 +62,8 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   const { data, error } = await supabase
     .from('heating_data')
     .select('*')
-    .order('date', { ascending: true })
-    .order('time', { ascending: true });
+    .order('date')
+    .order('time');
 
   if (error) {
     console.error('Error fetching heating data:', error);
@@ -75,6 +75,15 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     return [];
   }
 
+  console.log('RAW DATABASE DATA (first 5):');
+  data.slice(0, 5).forEach((row, i) => {
+    console.log(`${i}: ${row.date} ${row.time}`);
+  });
+  
+  console.log('RAW DATABASE DATA (last 5):');
+  data.slice(-5).forEach((row, i) => {
+    console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
+  });
   // Convert to data points and sort properly by date/time
   const dataPoints = data.map(this.dbRowToDataPoint);
   
@@ -92,6 +101,15 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     return a.time.localeCompare(b.time);
   });
 
+  console.log('AFTER JAVASCRIPT SORTING (first 5):');
+  dataPoints.slice(0, 5).forEach((point, i) => {
+    console.log(`${i}: ${point.date} ${point.time}`);
+  });
+  
+  console.log('AFTER JAVASCRIPT SORTING (last 5):');
+  dataPoints.slice(-5).forEach((point, i) => {
+    console.log(`${dataPoints.length - 5 + i}: ${point.date} ${point.time}`);
+  });
   console.log(`Total records: ${dataPoints.length}`);
   console.log('First record:', dataPoints[0]);
   console.log('Last record:', dataPoints[dataPoints.length - 1]);
