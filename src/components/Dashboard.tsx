@@ -148,7 +148,7 @@ export const Dashboard: React.FC = () => {
               <CombinedPowerChart data={heatingData} />
             </div>
           </div>
-        ) : !isProcessing && !isLoading && (
+        ) : !isLoading && (
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
