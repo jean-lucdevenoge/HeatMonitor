@@ -58,16 +58,10 @@ export class HeatingDataService {
 
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
-    // Calculate date 3 days ago
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
     try {
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
-        .gte('created_at', threeDaysAgoStr)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -77,8 +71,8 @@ export class HeatingDataService {
 
       const dataPoints = data.map(this.dbRowToDataPoint);
       
-      // Sort by date and time to ensure proper chronological order
-      return dataPoints.sort((a, b) => {
+      // Sort by date and time to ensure proper chronological order, then filter to past 3 days
+      const sortedData = dataPoints.sort((a, b) => {
         // Convert DD.MM.YYYY to YYYY-MM-DD for proper sorting
         const dateA = a.date.split('.').reverse().join('-');
         const dateB = b.date.split('.').reverse().join('-');
@@ -90,6 +84,28 @@ export class HeatingDataService {
         // If dates are the same, sort by time
         return a.time.localeCompare(b.time);
       });
+      
+      // Filter to only include data from the past 3 days
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      threeDaysAgo.setHours(0, 0, 0, 0); // Start of day 3 days ago
+      
+      const filteredData = sortedData.filter(point => {
+        // Convert DD.MM.YYYY to Date object
+        const [day, month, year] = point.date.split('.');
+        const [hours, minutes] = point.time.split(':');
+        const pointDate = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes)
+        );
+        
+        return pointDate >= threeDaysAgo;
+      });
+      
+      return filteredData;
     } catch (error) {
       console.error('Error in getAllData:', error);
       return [];
