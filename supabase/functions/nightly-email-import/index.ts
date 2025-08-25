@@ -83,11 +83,33 @@ serve(async (req) => {
               // Decode base64 content
               const csvContent = atob(csvAttachment.content)
               console.log(`Processing CSV: ${csvAttachment.filename}`)
+              console.log(`CSV content length: ${csvContent.length} characters`)
+              console.log(`CSV content preview (first 500 chars):`)
+              console.log(csvContent.substring(0, 500))
+              console.log('--- End CSV preview ---')
               
               // Parse CSV data
               const parsedData = parseHeatingCSV(csvContent)
+              console.log(`Parsed ${parsedData.length} data points from CSV`)
               
               if (parsedData.length > 0) {
+                console.log('Sample parsed data (first 3 records):')
+                parsedData.slice(0, 3).forEach((record, index) => {
+                  console.log(`Record ${index + 1}:`, JSON.stringify(record, null, 2))
+                })
+              } else {
+                console.log('❌ No data was parsed from CSV - checking CSV format...')
+                const lines = csvContent.split('\n')
+                console.log(`CSV has ${lines.length} lines`)
+                console.log('First 10 lines of CSV:')
+                lines.slice(0, 10).forEach((line, index) => {
+                  console.log(`Line ${index + 1}: "${line}"`)
+                })
+              }
+              
+              if (parsedData.length > 0) {
+                console.log(`Attempting to insert ${parsedData.length} records into database...`)
+                
                 // Insert data into database
                 const { data, error } = await supabaseClient
                   .from('heating_data')
@@ -98,23 +120,28 @@ serve(async (req) => {
                   .select('id')
 
                 if (error) {
-                  console.error('Database error:', error)
+                  console.error('❌ Database insertion error:', error)
+                  console.error('Error details:', JSON.stringify(error, null, 2))
+                  console.log('Sample data that failed to insert:')
+                  console.log(JSON.stringify(parsedData.slice(0, 2), null, 2))
                   throw error
                 }
 
                 const inserted = data?.length || 0
                 const duplicates = parsedData.length - inserted
-                console.log(`Imported ${inserted} new records, ${duplicates} duplicates skipped from ${csvAttachment.filename}`)
+                console.log(`✅ Successfully imported ${inserted} new records, ${duplicates} duplicates skipped from ${csvAttachment.filename}`)
+                console.log(`Database response data length: ${data?.length || 0}`)
                 importedCount += inserted
               } else {
-                console.log(`No valid data found in ${csvAttachment.filename}`)
+                console.log(`❌ No valid data found in ${csvAttachment.filename}`)
               }
             } catch (csvError) {
-              console.error(`Error processing CSV ${csvAttachment.filename}:`, csvError)
+              console.error(`❌ Error processing CSV ${csvAttachment.filename}:`, csvError)
+              console.error('CSV Error details:', JSON.stringify(csvError, null, 2))
             }
           }
         } else {
-          console.log('No CSV attachments found in email')
+          console.log('ℹ️ No CSV attachments found in email')
         }
 
         // Move email to Backup folder
@@ -460,28 +487,69 @@ async function moveEmailToBackup(config: any, accessToken: string, emailId: stri
 
 // Function to parse heating CSV data (reused from your existing parser)
 function parseHeatingCSV(csvContent: string) {
+  console.log('🔍 Starting CSV parsing...')
+  
   const lines = csvContent.split('\n')
+  console.log(`CSV has ${lines.length} total lines`)
   
   // Find the start of actual data (after the header information)
   let dataStartIndex = -1
   for (let i = 0; i < lines.length; i++) {
+    console.log(`Checking line ${i}: "${lines[i].substring(0, 50)}..."`)
     if (lines[i].includes('Date;Time of day;')) {
       dataStartIndex = i + 1
+      console.log(`✅ Found data header at line ${i}, data starts at line ${dataStartIndex}`)
       break
     }
   }
   
-  if (dataStartIndex === -1) return []
+  if (dataStartIndex === -1) {
+    console.log('❌ Could not find data header "Date;Time of day;" in CSV')
+    console.log('Looking for alternative headers...')
+    
+    // Try alternative header patterns
+    for (let i = 0; i < Math.min(20, lines.length); i++) {
+      const line = lines[i].toLowerCase()
+      if (line.includes('date') && line.includes('time')) {
+        console.log(`Found alternative header at line ${i}: "${lines[i]}"`)
+        dataStartIndex = i + 1
+        break
+      }
+    }
+    
+    if (dataStartIndex === -1) {
+      console.log('❌ No suitable header found, showing first 20 lines for debugging:')
+      lines.slice(0, 20).forEach((line, index) => {
+        console.log(`Line ${index}: "${line}"`)
+      })
+      return []
+    }
+  }
   
   // Extract data rows
   const dataLines = lines.slice(dataStartIndex).filter(line => 
     line.trim() && line.includes(';') && line.match(/^\d{2}\.\d{2}\.\d{4}/)
   )
   
-  return dataLines.map(line => {
+  console.log(`Found ${dataLines.length} valid data lines after filtering`)
+  if (dataLines.length > 0) {
+    console.log('Sample data lines:')
+    dataLines.slice(0, 3).forEach((line, index) => {
+      console.log(`Data line ${index + 1}: "${line}"`)
+    })
+  }
+  
+  const parsedRecords = dataLines.map((line, index) => {
     const values = line.split(';').map(v => v.trim())
     
-    return {
+    if (index < 3) {
+      console.log(`Parsing line ${index + 1} with ${values.length} values:`)
+      values.forEach((val, valIndex) => {
+        console.log(`  Value ${valIndex}: "${val}"`)
+      })
+    }
+    
+    const record = {
       date: values[0] || '',
       time: values[1] || '',
       collector_temp: parseFloat(values[2]) || 0,
@@ -504,5 +572,14 @@ function parseHeatingCSV(csvContent: string) {
       boiler_pump_speed: parseInt(values[19]) || 0,
       sensor_temp: parseFloat(values[20]) || 0,
     }
+    
+    if (index < 3) {
+      console.log(`Parsed record ${index + 1}:`, JSON.stringify(record, null, 2))
+    }
+    
+    return record
   })
+  
+  console.log(`✅ Successfully parsed ${parsedRecords.length} records`)
+  return parsedRecords
 }
