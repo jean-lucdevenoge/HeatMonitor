@@ -74,16 +74,56 @@ serve(async (req) => {
           (att.contentType.includes('text/csv') || att.contentType.includes('application/csv'))
         )
 
-        if (csvAttachments.length > 0) {
-          console.log(`Found ${csvAttachments.length} CSV attachment(s)`)
+        // Also check for Excel content type that might be CSV
+        const excelCsvAttachments = email.attachments.filter(att => 
+          att.filename.toLowerCase().endsWith('.csv') && 
+          att.contentType.includes('application/vnd.ms-excel')
+        )
+        
+        // Combine both types
+        const allCsvAttachments = [...csvAttachments, ...excelCsvAttachments]
+        
+        console.log(`Found ${csvAttachments.length} standard CSV attachments`)
+        console.log(`Found ${excelCsvAttachments.length} Excel-type CSV attachments`)
+        console.log(`Total CSV attachments to process: ${allCsvAttachments.length}`)
+        if (allCsvAttachments.length > 0) {
+          console.log(`Found ${allCsvAttachments.length} CSV attachment(s)`)
           
           // Process each CSV attachment
-          for (const csvAttachment of csvAttachments) {
+          for (const csvAttachment of allCsvAttachments) {
             try {
+              console.log(`=== PROCESSING ATTACHMENT: ${csvAttachment.filename} ===`)
+              console.log(`Content Type: ${csvAttachment.contentType}`)
+              console.log(`Content Length: ${csvAttachment.content?.length || 0} characters`)
+              console.log(`Content exists: ${!!csvAttachment.content}`)
+              
+              if (!csvAttachment.content) {
+                console.log(`❌ No content found in attachment ${csvAttachment.filename}`)
+                continue
+              }
+              
               // Decode base64 content
-              const csvContent = atob(csvAttachment.content)
+              let csvContent = ''
+              try {
+                csvContent = atob(csvAttachment.content)
+                console.log(`✅ Successfully decoded base64 content`)
+              } catch (decodeError) {
+                console.log(`❌ Failed to decode base64 content:`, decodeError)
+                console.log(`Raw content preview (first 200 chars): "${csvAttachment.content.substring(0, 200)}"`)
+                // Try using content directly if it's not base64
+                csvContent = csvAttachment.content
+                console.log(`Trying to use content directly...`)
+              }
+              
               console.log(`Processing CSV: ${csvAttachment.filename}`)
               console.log(`CSV content length: ${csvContent.length} characters`)
+              console.log(`CSV content is empty: ${csvContent.length === 0}`)
+              
+              if (csvContent.length === 0) {
+                console.log(`❌ CSV content is empty after decoding`)
+                continue
+              }
+              
               console.log(`CSV content preview (first 500 chars):`)
               console.log(csvContent.substring(0, 500))
               console.log('--- End CSV preview ---')
