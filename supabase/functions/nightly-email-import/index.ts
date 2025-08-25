@@ -214,7 +214,7 @@ async function checkInbox(config: any, accessToken: string): Promise<EmailMessag
     console.log('Connecting to email inbox...')
     
     // First, let's explore what folders are available
-    console.log('Exploring available mail folders...')
+    console.log('=== EXPLORING AVAILABLE MAIL FOLDERS ===')
     const foldersUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/mailFolders`
     
     const foldersResponse = await fetch(foldersUrl, {
@@ -226,10 +226,17 @@ async function checkInbox(config: any, accessToken: string): Promise<EmailMessag
 
     if (foldersResponse.ok) {
       const foldersData = await foldersResponse.json()
-      console.log('Available folders:')
+      console.log(`=== FOUND ${foldersData.value.length} FOLDERS ===`)
       foldersData.value.forEach((folder: any) => {
-        console.log(`- ${folder.displayName} (ID: ${folder.id}) - ${folder.totalItemCount} items, ${folder.unreadItemCount} unread`)
+        console.log(`📁 FOLDER: "${folder.displayName}"`)
+        console.log(`   - ID: ${folder.id}`)
+        console.log(`   - Total Items: ${folder.totalItemCount}`)
+        console.log(`   - Unread Items: ${folder.unreadItemCount}`)
+        console.log(`   - Well Known Name: ${folder.wellKnownName || 'N/A'}`)
+        console.log(`   - Parent Folder ID: ${folder.parentFolderId || 'N/A'}`)
+        console.log('   ---')
       })
+      console.log('=== END FOLDER LIST ===')
       
       // Find the actual inbox folder
       const inboxFolder = foldersData.value.find((folder: any) => 
@@ -240,11 +247,15 @@ async function checkInbox(config: any, accessToken: string): Promise<EmailMessag
       )
       
       if (inboxFolder) {
-        console.log(`Found inbox folder: ${inboxFolder.displayName} with ${inboxFolder.totalItemCount} total items, ${inboxFolder.unreadItemCount} unread`)
+        console.log(`✅ FOUND INBOX FOLDER: "${inboxFolder.displayName}"`)
+        console.log(`   - Total Items: ${inboxFolder.totalItemCount}`)
+        console.log(`   - Unread Items: ${inboxFolder.unreadItemCount}`)
+        console.log(`   - Folder ID: ${inboxFolder.id}`)
         
         // Try to get messages from the specific inbox folder
         const inboxMessagesUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/mailFolders/${inboxFolder.id}/messages?$top=50&$expand=attachments&$orderby=receivedDateTime desc`
         
+        console.log(`📧 FETCHING MESSAGES FROM INBOX...`)
         const inboxResponse = await fetch(inboxMessagesUrl, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -255,13 +266,25 @@ async function checkInbox(config: any, accessToken: string): Promise<EmailMessag
         if (inboxResponse.ok) {
           const inboxData = await inboxResponse.json()
           const inboxMessages = inboxData.value || []
-          console.log(`Found ${inboxMessages.length} messages in inbox folder`)
+          console.log(`✅ FOUND ${inboxMessages.length} MESSAGES IN INBOX FOLDER`)
           
           if (inboxMessages.length > 0) {
-            console.log('Sample messages from inbox:')
+            console.log('=== SAMPLE MESSAGES FROM INBOX ===')
             inboxMessages.slice(0, 3).forEach((msg: any, index: number) => {
-              console.log(`${index + 1}. Subject: "${msg.subject}" | From: ${msg.from?.emailAddress?.address} | Date: ${msg.receivedDateTime} | Read: ${msg.isRead} | Attachments: ${msg.attachments?.length || 0}`)
+              console.log(`📨 MESSAGE ${index + 1}:`)
+              console.log(`   - Subject: "${msg.subject}"`)
+              console.log(`   - From: ${msg.from?.emailAddress?.address}`)
+              console.log(`   - Date: ${msg.receivedDateTime}`)
+              console.log(`   - Is Read: ${msg.isRead}`)
+              console.log(`   - Attachments: ${msg.attachments?.length || 0}`)
+              if (msg.attachments && msg.attachments.length > 0) {
+                msg.attachments.forEach((att: any, attIndex: number) => {
+                  console.log(`     📎 Attachment ${attIndex + 1}: ${att.name} (${att.contentType})`)
+                })
+              }
+              console.log('   ---')
             })
+            console.log('=== END SAMPLE MESSAGES ===')
             
             // Convert to our EmailMessage format
             const emails: EmailMessage[] = inboxMessages.map((msg: any) => ({
@@ -281,13 +304,17 @@ async function checkInbox(config: any, accessToken: string): Promise<EmailMessag
             return emails
           }
         } else {
-          console.error(`Failed to get messages from inbox folder: ${inboxResponse.status}`)
+          const errorText = await inboxResponse.text()
+          console.error(`❌ FAILED TO GET MESSAGES FROM INBOX FOLDER: ${inboxResponse.status}`)
+          console.error(`Error details: ${errorText}`)
         }
       } else {
-        console.log('Could not find inbox folder, trying default approach...')
+        console.log('❌ COULD NOT FIND INBOX FOLDER, TRYING FALLBACK APPROACHES...')
       }
     } else {
-      console.error(`Failed to get folders: ${foldersResponse.status}`)
+      const errorText = await foldersResponse.text()
+      console.error(`❌ FAILED TO GET FOLDERS: ${foldersResponse.status}`)
+      console.error(`Error details: ${errorText}`)
     }
     
     // Fallback: Try different approaches to get messages
