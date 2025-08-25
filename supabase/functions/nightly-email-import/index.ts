@@ -159,11 +159,6 @@ serve(async (req) => {
                 console.log(`Database response data length: ${data?.length || 0}`)
                 importedCount += inserted
 
-                // Calculate and store daily energy data if we have new records
-                if (inserted > 0) {
-                  console.log('📊 Calculating daily energy data...')
-                  await calculateAndStoreDailyEnergy(supabaseClient, parsedData)
-                }
               } else {
                 console.log(`❌ No valid data found in ${csvAttachment.filename}`)
               }
@@ -190,6 +185,12 @@ serve(async (req) => {
           console.error(`Failed to move email to backup:`, moveError)
         }
       }
+    }
+
+    // Calculate and store daily energy data for ALL dates in database
+    if (importedCount > 0) {
+      console.log('📊 Recalculating daily energy data for all dates...')
+      await calculateAllDailyEnergy(supabaseClient)
     }
 
     const result = {
@@ -600,15 +601,34 @@ function parseHeatingCSV(csvContent: string) {
   return parsedRecords
 }
 
-// Function to calculate and store daily energy data
-async function calculateAndStoreDailyEnergy(supabaseClient: any, rawData: any[]) {
+// Function to calculate and store daily energy data for ALL dates in database
+async function calculateAllDailyEnergy(supabaseClient: any) {
   try {
-    console.log('🔄 Starting daily energy calculations...')
+    console.log('🔄 Starting daily energy calculations for all dates...')
+    
+    // Get ALL heating data from database, ordered by date and time
+    const { data: allHeatingData, error: fetchError } = await supabaseClient
+      .from('heating_data')
+      .select('*')
+      .order('date')
+      .order('time')
+    
+    if (fetchError) {
+      console.error('❌ Error fetching heating data:', fetchError)
+      throw fetchError
+    }
+    
+    if (!allHeatingData || allHeatingData.length === 0) {
+      console.log('ℹ️ No heating data found in database')
+      return
+    }
+    
+    console.log(`📊 Processing ${allHeatingData.length} total heating data records`)
     
     // Group data by date
     const dataByDate = new Map<string, any[]>()
     
-    rawData.forEach(record => {
+    allHeatingData.forEach(record => {
       const date = record.date
       if (!dataByDate.has(date)) {
         dataByDate.set(date, [])
