@@ -662,10 +662,14 @@ async function calculateAndStoreDailyEnergy(supabaseClient: any, rawData: any[])
         if (isSolarActive) {
           solarActiveMinutes += intervalMinutes
           const tempDiff = record.collector_temp - record.sensor_temp
+          // Only calculate energy when system is active AND temperature difference is positive
           if (tempDiff > 0) {
             // Solar power (kW) = flow_rate (5.5 L/min) × specific_heat (4.18 kJ/kg·K) × temp_diff (K) / 60
             const solarPowerKw = (5.5 * 4.18 * tempDiff) / 60
-            solarEnergyKwh += solarPowerKw * intervalHours
+            // Only accumulate energy when actually producing power
+            if (solarPowerKw > 0) {
+              solarEnergyKwh += solarPowerKw * intervalHours
+            }
           }
         }
         
@@ -674,13 +678,18 @@ async function calculateAndStoreDailyEnergy(supabaseClient: any, rawData: any[])
         
         if (isGasActive) {
           gasActiveMinutes += intervalMinutes
+          // Only calculate energy when system is active AND modulation is valid
           if (record.boiler_modulation && record.boiler_modulation !== '----') {
             const modulationStr = record.boiler_modulation.replace('%', '').trim()
             const modulation = parseFloat(modulationStr)
-            if (!isNaN(modulation)) {
+            // Only calculate energy when modulation is valid and greater than 0
+            if (!isNaN(modulation) && modulation > 0) {
               // Gas power (kW) = 10 kW × modulation%
               const gasPowerKw = 10 * (modulation / 100)
-              gasEnergyKwh += gasPowerKw * intervalHours
+              // Only accumulate energy when actually consuming gas
+              if (gasPowerKw > 0) {
+                gasEnergyKwh += gasPowerKw * intervalHours
+              }
             }
           }
         }
