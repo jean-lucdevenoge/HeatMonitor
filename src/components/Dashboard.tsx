@@ -44,12 +44,13 @@ export const Dashboard: React.FC = () => {
         setLastUpdated(new Date().toLocaleString());
         
         // Log data range for debugging
-        console.log('Data loaded:', {
+        console.log('Data loaded (past 3 days):', {
           totalPoints: data.length,
           firstDate: data[0]?.date,
           firstTime: data[0]?.time,
           lastDate: data[data.length - 1]?.date,
-          lastTime: data[data.length - 1]?.time
+          lastTime: data[data.length - 1]?.time,
+          dateRange: `${data[0]?.date} - ${data[data.length - 1]?.date}`
         });
       }
     } catch (error) {

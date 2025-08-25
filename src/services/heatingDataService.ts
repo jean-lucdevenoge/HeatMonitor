@@ -58,10 +58,16 @@ export class HeatingDataService {
 
   // Get all heating data from database
   static async getAllData(): Promise<HeatingDataPoint[]> {
+    // Calculate date 3 days ago
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
     try {
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
+        .gte('created_at', threeDaysAgoStr)
         .order('created_at', { ascending: true });
 
       if (error) {
