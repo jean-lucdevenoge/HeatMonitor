@@ -43,8 +43,8 @@ export const Dashboard: React.FC = () => {
         setDataCount(count);
         setLastUpdated(new Date().toLocaleString());
         
-        // Log data range for debugging
-        console.log('Data loaded (past 3 days):', {
+        // Log data range for debugging  
+        console.log('Data loaded (all data):', {
           totalPoints: data.length,
           firstDate: data[0]?.date,
           firstTime: data[0]?.time,
