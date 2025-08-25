@@ -146,7 +146,7 @@ export const Dashboard: React.FC = () => {
                 <div className="text-right">
                   <p className="text-sm opacity-90">{t('dashboard.dataRange')}</p>
                   <p className="font-semibold">
-                    {heatingData[0]?.date} - {latestData?.date}
+                    {heatingData[0]?.date} - {heatingData[heatingData.length - 1]?.date}
                   </p>
                 </div>
               </div>
