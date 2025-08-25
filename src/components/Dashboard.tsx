@@ -42,6 +42,15 @@ export const Dashboard: React.FC = () => {
         setMetrics(calculatedMetrics);
         setDataCount(count);
         setLastUpdated(new Date().toLocaleString());
+        
+        // Log data range for debugging
+        console.log('Data loaded:', {
+          totalPoints: data.length,
+          firstDate: data[0]?.date,
+          firstTime: data[0]?.time,
+          lastDate: data[data.length - 1]?.date,
+          lastTime: data[data.length - 1]?.time
+        });
       }
     } catch (error) {
       console.error('Error loading data from database:', error);

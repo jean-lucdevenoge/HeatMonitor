@@ -20,7 +20,7 @@ export const parseHeatingCSV = (csvContent: string): HeatingDataPoint[] => {
     line.trim() && line.includes(';') && line.match(/^\d{2}\.\d{2}\.\d{4}/)
   );
   
-  return dataLines.map(line => {
+  const parsedData = dataLines.map(line => {
     const values = line.split(';').map(v => v.trim());
     
     return {
@@ -46,6 +46,20 @@ export const parseHeatingCSV = (csvContent: string): HeatingDataPoint[] => {
       boilerPumpSpeed: parseInt(values[19]) || 0,
       sensorTemp: parseFloat(values[20]) || 0,
     };
+  });
+
+  // Sort by date and time to ensure chronological order
+  return parsedData.sort((a, b) => {
+    // Convert DD.MM.YYYY to YYYY-MM-DD for proper sorting
+    const dateA = a.date.split('.').reverse().join('-');
+    const dateB = b.date.split('.').reverse().join('-');
+    
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB);
+    }
+    
+    // If dates are the same, sort by time
+    return a.time.localeCompare(b.time);
   });
 };
 

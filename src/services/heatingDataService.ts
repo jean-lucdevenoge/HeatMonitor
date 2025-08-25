@@ -62,15 +62,28 @@ export class HeatingDataService {
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching heating data:', error);
         throw error;
       }
 
-      return data.map(this.dbRowToDataPoint);
+      const dataPoints = data.map(this.dbRowToDataPoint);
+      
+      // Sort by date and time to ensure proper chronological order
+      return dataPoints.sort((a, b) => {
+        // Convert DD.MM.YYYY to YYYY-MM-DD for proper sorting
+        const dateA = a.date.split('.').reverse().join('-');
+        const dateB = b.date.split('.').reverse().join('-');
+        
+        if (dateA !== dateB) {
+          return dateA.localeCompare(dateB);
+        }
+        
+        // If dates are the same, sort by time
+        return a.time.localeCompare(b.time);
+      });
     } catch (error) {
       console.error('Error in getAllData:', error);
       return [];
