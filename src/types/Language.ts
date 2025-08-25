@@ -620,5 +620,187 @@ export const translations: Translations = {
     en: 'Click "Mark Period" then click two points on the chart to analyze a specific time period',
     de: 'Klicken Sie auf "Zeitraum markieren" und dann auf zwei Punkte im Diagramm, um einen bestimmten Zeitraum zu analysieren',
     fr: 'Cliquez sur "Marquer la période" puis cliquez sur deux points du graphique pour analyser une période spécifique'
+  },
+  
+  // Analytics Dashboard
+  'analytics.title': {
+    en: 'Energy Analytics Dashboard',
+    de: 'Energie-Analytik-Dashboard',
+    fr: 'Tableau de bord analytique énergétique'
+  },
+  'analytics.subtitle': {
+    en: 'Daily energy calculations and system performance metrics',
+    de: 'Tägliche Energieberechnungen und Systemleistungsmetriken',
+    fr: 'Calculs énergétiques quotidiens et métriques de performance du système'
+  },
+  'analytics.loadingData': {
+    en: 'Loading analytics data...',
+    de: 'Lade Analysedaten...',
+    fr: 'Chargement des données analytiques...'
+  },
+  'analytics.errorLoadingData': {
+    en: 'Error Loading Data',
+    de: 'Fehler beim Laden der Daten',
+    fr: 'Erreur de chargement des données'
+  },
+  'analytics.retry': {
+    en: 'Retry',
+    de: 'Wiederholen',
+    fr: 'Réessayer'
+  },
+  'analytics.totalSolarEnergy': {
+    en: 'Total Solar Energy',
+    de: 'Gesamte Solarenergie',
+    fr: 'Énergie solaire totale'
+  },
+  'analytics.totalGasEnergy': {
+    en: 'Total Gas Energy',
+    de: 'Gesamte Gasenergie',
+    fr: 'Énergie gaz totale'
+  },
+  'analytics.totalCombinedEnergy': {
+    en: 'Total Combined Energy',
+    de: 'Gesamte kombinierte Energie',
+    fr: 'Énergie totale combinée'
+  },
+  'analytics.avgDailyEnergy': {
+    en: 'Avg Daily Energy',
+    de: 'Durchschn. tägliche Energie',
+    fr: 'Énergie quotidienne moyenne'
+  },
+  'analytics.ofTotal': {
+    en: 'of total',
+    de: 'der Gesamtmenge',
+    fr: 'du total'
+  },
+  'analytics.daysAnalyzed': {
+    en: 'days analyzed',
+    de: 'Tage analysiert',
+    fr: 'jours analysés'
+  },
+  'analytics.perDay': {
+    en: 'per day',
+    de: 'pro Tag',
+    fr: 'par jour'
+  },
+  'analytics.energyTrendsOverTime': {
+    en: 'Energy Trends Over Time',
+    de: 'Energietrends im Zeitverlauf',
+    fr: 'Tendances énergétiques dans le temps'
+  },
+  'analytics.dailyEnergyBreakdown': {
+    en: 'Daily Energy Breakdown',
+    de: 'Tägliche Energieaufschlüsselung',
+    fr: 'Répartition énergétique quotidienne'
+  },
+  'analytics.totalEnergyDistribution': {
+    en: 'Total Energy Distribution',
+    de: 'Gesamte Energieverteilung',
+    fr: 'Distribution énergétique totale'
+  },
+  'analytics.temperatureTrends': {
+    en: 'Temperature Trends',
+    de: 'Temperaturtrends',
+    fr: 'Tendances de température'
+  },
+  'analytics.systemActivityTime': {
+    en: 'System Activity Time',
+    de: 'Systemaktivitätszeit',
+    fr: 'Temps d\'activité du système'
+  },
+  'analytics.dailyEnergyCalculations': {
+    en: 'Daily Energy Calculations',
+    de: 'Tägliche Energieberechnungen',
+    fr: 'Calculs énergétiques quotidiens'
+  },
+  'analytics.daysOfData': {
+    en: 'days of data',
+    de: 'Tage mit Daten',
+    fr: 'jours de données'
+  },
+  'analytics.date': {
+    en: 'Date',
+    de: 'Datum',
+    fr: 'Date'
+  },
+  'analytics.solarEnergyKwh': {
+    en: 'Solar Energy (kWh)',
+    de: 'Solarenergie (kWh)',
+    fr: 'Énergie solaire (kWh)'
+  },
+  'analytics.gasEnergyKwh': {
+    en: 'Gas Energy (kWh)',
+    de: 'Gasenergie (kWh)',
+    fr: 'Énergie gaz (kWh)'
+  },
+  'analytics.totalEnergyKwh': {
+    en: 'Total Energy (kWh)',
+    de: 'Gesamtenergie (kWh)',
+    fr: 'Énergie totale (kWh)'
+  },
+  'analytics.solarActiveMin': {
+    en: 'Solar Active (min)',
+    de: 'Solar aktiv (min)',
+    fr: 'Solaire actif (min)'
+  },
+  'analytics.gasActiveMin': {
+    en: 'Gas Active (min)',
+    de: 'Gas aktiv (min)',
+    fr: 'Gaz actif (min)'
+  },
+  'analytics.avgCollectorC': {
+    en: 'Avg Collector (°C)',
+    de: 'Durchschn. Kollektor (°C)',
+    fr: 'Collecteur moy. (°C)'
+  },
+  'analytics.avgOutsideC': {
+    en: 'Avg Outside (°C)',
+    de: 'Durchschn. Außen (°C)',
+    fr: 'Extérieur moy. (°C)'
+  },
+  'analytics.noEnergyData': {
+    en: 'No Energy Data Available',
+    de: 'Keine Energiedaten verfügbar',
+    fr: 'Aucune donnée énergétique disponible'
+  },
+  'analytics.energyCalculationsWillAppear': {
+    en: 'Energy calculations will appear here once data is processed.',
+    de: 'Energieberechnungen werden hier angezeigt, sobald die Daten verarbeitet sind.',
+    fr: 'Les calculs énergétiques apparaîtront ici une fois les données traitées.'
+  },
+  'analytics.solarEnergy': {
+    en: 'Solar Energy',
+    de: 'Solarenergie',
+    fr: 'Énergie solaire'
+  },
+  'analytics.gasEnergy': {
+    en: 'Gas Energy',
+    de: 'Gasenergie',
+    fr: 'Énergie gaz'
+  },
+  'analytics.avgCollectorTemp': {
+    en: 'Avg Collector Temp (°C)',
+    de: 'Durchschn. Kollektor-Temp. (°C)',
+    fr: 'Temp. moy. collecteur (°C)'
+  },
+  'analytics.avgOutsideTemp': {
+    en: 'Avg Outside Temp (°C)',
+    de: 'Durchschn. Außentemp. (°C)',
+    fr: 'Temp. ext. moyenne (°C)'
+  },
+  'analytics.avgDhwTemp': {
+    en: 'Avg DHW Temp (°C)',
+    de: 'Durchschn. Warmwasser-Temp. (°C)',
+    fr: 'Temp. moy. ECS (°C)'
+  },
+  'analytics.solarActiveMinutes': {
+    en: 'Solar Active (minutes)',
+    de: 'Solar aktiv (Minuten)',
+    fr: 'Solaire actif (minutes)'
+  },
+  'analytics.gasActiveMinutes': {
+    en: 'Gas Active (minutes)',
+    de: 'Gas aktiv (Minuten)',
+    fr: 'Gaz actif (minutes)'
   }
 };
