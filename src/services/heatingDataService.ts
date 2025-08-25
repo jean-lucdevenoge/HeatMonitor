@@ -56,34 +56,33 @@ export class HeatingDataService {
     };
   }
 
-  // Get all heating data from database
-  static async getAllData(): Promise<HeatingDataPoint[]> {
-    try {
-      console.log('Fetching all heating data from database...');
-      const { data, error } = await supabase
-        .from('heating_data')
-        .select('*')
-        .order('date')
-        .order('time');
+// Get all heating data from database
+static async getAllData(): Promise<HeatingDataPoint[]> {
+  console.log('Fetching all heating data from database...');
+  const { data, error } = await supabase
+    .from('heating_data')
+    .select('*')
+    .order('date', { ascending: true, nullsLast: true })
+    .order('time', { ascending: true, nullsLast: true });
 
-      if (error) {
-        console.error('Error fetching heating data:', error);
-        throw error;
-      }
-
-      // Convert to data points
-      const dataPoints = data.map(this.dbRowToDataPoint);
-      
-      console.log(`Total records: ${dataPoints.length}`);
-      console.log('First record:', dataPoints[0]);
-      console.log('Last record:', dataPoints[dataPoints.length - 1]);
-      
-      return dataPoints;
-    } catch (error) {
-      console.error('Error fetching heating data:', error);
-      throw error;
-    }
+  if (error) {
+    console.error('Error fetching heating data:', error);
+    throw error;
   }
+
+  if (!data || data.length === 0) {
+    console.log('Total records: 0');
+    return [];
+  }
+
+  const dataPoints = data.map(this.dbRowToDataPoint);
+
+  console.log(`Total records: ${dataPoints.length}`);
+  console.log('First record:', dataPoints[0]);
+  console.log('Last record:', dataPoints[dataPoints.length - 1]);
+
+  return dataPoints;
+}
 
   // Insert heating data points into database
   static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
