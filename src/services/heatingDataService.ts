@@ -62,6 +62,7 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   const { data, error } = await supabase
     .from('heating_data')
     .select('*')
+    .range(0, 10000)
     .order('date')
     .order('time');
 
