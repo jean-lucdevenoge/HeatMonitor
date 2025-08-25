@@ -17,14 +17,9 @@ import { HeatingDataService } from '../services/heatingDataService';
 import { Calendar, TrendingUp, AlertCircle, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-interface DashboardProps {
-  dateRange?: { startDate: string; endDate: string };
-}
-
-export const Dashboard: React.FC<DashboardProps> = ({ dateRange }) => {
+export const Dashboard: React.FC = () => {
   const { t } = useLanguage();
   const [heatingData, setHeatingData] = useState<HeatingDataPoint[]>([]);
-  const [allHeatingData, setAllHeatingData] = useState<HeatingDataPoint[]>([]);
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -36,35 +31,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ dateRange }) => {
     loadDataFromDatabase();
   }, []);
 
-  // Filter data when date range changes
-  useEffect(() => {
-    if (allHeatingData.length > 0 && dateRange) {
-      filterDataByDateRange();
-    }
-  }, [dateRange, allHeatingData]);
-
-  const filterDataByDateRange = () => {
-    if (!dateRange || allHeatingData.length === 0) return;
-
-    const filteredData = allHeatingData.filter((point) => {
-      // Convert DD.MM.YYYY to YYYY-MM-DD for comparison
-      const [day, month, year] = point.date.split('.');
-      const pointDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      
-      return pointDate >= dateRange.startDate && pointDate <= dateRange.endDate;
-    });
-
-    console.log(`Filtered data: ${filteredData.length} points from ${dateRange.startDate} to ${dateRange.endDate}`);
-    
-    if (filteredData.length > 0) {
-      const calculatedMetrics = calculateMetrics(filteredData);
-      setHeatingData(filteredData);
-      setMetrics(calculatedMetrics);
-    } else {
-      setHeatingData([]);
-      setMetrics(null);
-    }
-  };
   const loadDataFromDatabase = async () => {
     setIsLoading(true);
     try {
@@ -72,7 +38,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ dateRange }) => {
       const count = await HeatingDataService.getDataCount();
       
       if (data.length > 0) {
-        setAllHeatingData(data);
+        const calculatedMetrics = calculateMetrics(data);
+        setHeatingData(data);
+        setMetrics(calculatedMetrics);
         setDataCount(count);
         setLastUpdated(new Date().toLocaleString());
         

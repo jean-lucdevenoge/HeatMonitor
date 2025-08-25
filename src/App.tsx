@@ -5,25 +5,11 @@ import { LanguageProvider } from './contexts/LanguageContext';
 
 function App() {
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [dateRange, setDateRange] = useState(() => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - 3); // Last 3 days
-    
-    return {
-      startDate: startDate.toISOString().split('T')[0], // YYYY-MM-DD format
-      endDate: endDate.toISOString().split('T')[0]
-    };
-  });
-
-  const handleDateRangeChange = (startDate: string, endDate: string) => {
-    setDateRange({ startDate, endDate });
-  };
 
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard dateRange={dateRange} />;
+        return <Dashboard />;
       case 'analytics':
         return (
           <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -59,12 +45,7 @@ function App() {
   return (
     <LanguageProvider>
     <div className="min-h-screen bg-gray-50">
-      <Header 
-        onSectionChange={setActiveSection} 
-        activeSection={activeSection}
-        onDateRangeChange={handleDateRangeChange}
-        dateRange={dateRange}
-      />
+      <Header onSectionChange={setActiveSection} activeSection={activeSection} />
       {renderContent()}
     </div>
     </LanguageProvider>
