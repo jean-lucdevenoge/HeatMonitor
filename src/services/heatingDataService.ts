@@ -63,7 +63,8 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     .from('heating_data')
     .select('*')
     .order('date')
-    .order('time');
+    .order('time')
+    .limit(10000); // Add explicit high limit to check if there's a default limit
 
   if (error) {
     console.error('Error fetching heating data:', error);
@@ -75,6 +76,16 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     return [];
   }
 
+  console.log('RAW DATABASE DATA (first 5):');
+  data.slice(0, 5).forEach((row, i) => {
+    console.log(`${i}: ${row.date} ${row.time}`);
+  });
+  
+  console.log('RAW DATABASE DATA (last 5):');
+  data.slice(-5).forEach((row, i) => {
+    console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
+  });
+  
   console.log('RAW DATABASE DATA (first 5):');
   data.slice(0, 5).forEach((row, i) => {
     console.log(`${i}: ${row.date} ${row.time}`);
@@ -101,6 +112,16 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     return a.time.localeCompare(b.time);
   });
 
+  console.log('AFTER JAVASCRIPT SORTING (first 5):');
+  dataPoints.slice(0, 5).forEach((point, i) => {
+    console.log(`${i}: ${point.date} ${point.time}`);
+  });
+  
+  console.log('AFTER JAVASCRIPT SORTING (last 5):');
+  dataPoints.slice(-5).forEach((point, i) => {
+    console.log(`${dataPoints.length - 5 + i}: ${point.date} ${point.time}`);
+  });
+  
   console.log('AFTER JAVASCRIPT SORTING (first 5):');
   dataPoints.slice(0, 5).forEach((point, i) => {
     console.log(`${i}: ${point.date} ${point.time}`);
@@ -175,6 +196,7 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   // Get data count
   static async getDataCount(): Promise<number> {
     try {
+      console.log('Getting total count from database...');
       const { count, error } = await supabase
         .from('heating_data')
         .select('*', { count: 'exact', head: true });
@@ -184,6 +206,7 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
         return 0;
       }
 
+      console.log(`Database reports ${count} total records`);
       return count || 0;
     } catch (error) {
       console.error('Error in getDataCount:', error);
