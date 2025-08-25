@@ -1,14 +1,21 @@
 import React from 'react';
-import { Home, Settings, BarChart3, FileText } from 'lucide-react';
+import { Home, Settings, BarChart3, FileText, Calendar } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface HeaderProps {
   onSectionChange: (section: string) => void;
   activeSection: string;
+  onDateRangeChange?: (startDate: string, endDate: string) => void;
+  dateRange?: { startDate: string; endDate: string };
 }
 
-export const Header: React.FC<HeaderProps> = ({ onSectionChange, activeSection }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  onSectionChange, 
+  activeSection, 
+  onDateRangeChange,
+  dateRange 
+}) => {
   const { t } = useLanguage();
 
   const navItems = [
@@ -33,6 +40,27 @@ export const Header: React.FC<HeaderProps> = ({ onSectionChange, activeSection }
           
           <div className="flex items-center space-x-4">
             <LanguageSelector />
+            
+            {/* Date Range Selector - only show on dashboard */}
+            {activeSection === 'dashboard' && onDateRangeChange && dateRange && (
+              <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
+                <Calendar className="w-4 h-4 text-gray-600" />
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => onDateRangeChange(e.target.value, dateRange.endDate)}
+                  className="text-sm border-none bg-transparent focus:outline-none focus:ring-0"
+                />
+                <span className="text-gray-400">-</span>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => onDateRangeChange(dateRange.startDate, e.target.value)}
+                  className="text-sm border-none bg-transparent focus:outline-none focus:ring-0"
+                />
+              </div>
+            )}
+            
             <nav className="flex space-x-1">
             {navItems.map((item) => (
               <button
