@@ -10,17 +10,15 @@ import { SolarActivityChart } from './SolarActivityChart';
 import { EnergyChart } from './EnergyChart';
 import { GasPowerChart } from './GasPowerChart';
 import { CombinedPowerChart } from './CombinedPowerChart';
-import { FileUpload } from './FileUpload';
 import { parseHeatingCSV, calculateMetrics } from '../utils/csvParser';
 import { HeatingDataService } from '../services/heatingDataService';
-import { Calendar, TrendingUp, AlertCircle, BarChart3 } from 'lucide-react';
+import { Calendar, AlertCircle, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export const Dashboard: React.FC = () => {
   const { t } = useLanguage();
   const [heatingData, setHeatingData] = useState<HeatingDataPoint[]>([]);
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dataCount, setDataCount] = useState(0);
@@ -72,39 +70,6 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    setIsProcessing(true);
-    
-    try {
-      const text = await file.text();
-      const parsedData = parseHeatingCSV(text);
-      
-      if (parsedData.length === 0) {
-        console.log('No valid data found in CSV file');
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Save to database (duplicates will be handled by the service)
-      const result = await HeatingDataService.insertData(parsedData);
-      
-      if (result.inserted === 0) {
-        console.log('No new data points found - file may have already been uploaded');
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Reload data from database to get the updated dataset
-      await loadDataFromDatabase();
-      
-      console.log(`Added ${result.inserted} new data points, ${result.duplicates} duplicates skipped`);
-    } catch (error) {
-      console.error('Error parsing CSV:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const latestData = heatingData.length > 0 ? heatingData[heatingData.length - 1] : null;
 
   return (
@@ -130,7 +95,11 @@ export const Dashboard: React.FC = () => {
         {/* File Upload */}
         {heatingData.length === 0 && !isLoading && (
           <div className="mb-8">
-            <FileUpload onFileSelect={handleFileUpload} isProcessing={isProcessing} />
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
+              <p className="text-gray-500">Data is automatically imported from email attachments every night at 4 AM European time.</p>
+            </div>
           </div>
         )}
 
@@ -177,18 +146,6 @@ export const Dashboard: React.FC = () => {
               <EnergyChart data={heatingData} />
               <GasPowerChart data={heatingData} />
               <CombinedPowerChart data={heatingData} />
-            </div>
-
-            {/* Additional Upload for New Data */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                {t('upload.addHistoricalData')}
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {t('upload.additionalDataDescription')}
-              </p>
-              <FileUpload onFileSelect={handleFileUpload} isProcessing={isProcessing} />
             </div>
           </div>
         ) : !isProcessing && !isLoading && (
