@@ -59,11 +59,54 @@ export class HeatingDataService {
 // Get all heating data from database
 static async getAllData(): Promise<HeatingDataPoint[]> {
   console.log('Fetching all heating data from database...');
-  const { data, error } = await supabase
+  
+  // Get total count first
+  const { count, error: countError } = await supabase
     .from('heating_data')
-    .select('*')
-    .order('date')
-    .order('time');
+    .select('*', { count: 'exact', head: true });
+
+  if (countError) {
+    console.error('Error getting count:', countError);
+    throw countError;
+  }
+
+  console.log(`Total records in database: ${count}`);
+
+  // Fetch all data in chunks to avoid limits
+  const allData: HeatingDataRow[] = [];
+  const chunkSize = 1000;
+  let offset = 0;
+
+  while (offset < (count || 0)) {
+    console.log(`Fetching chunk ${offset} to ${offset + chunkSize - 1}`);
+    
+    const { data: chunkData, error } = await supabase
+      .from('heating_data')
+      .select('*')
+      .order('date')
+      .order('time')
+      .range(offset, offset + chunkSize - 1);
+
+    if (error) {
+      console.error('Error fetching chunk:', error);
+      throw error;
+    }
+
+    if (chunkData) {
+      allData.push(...chunkData);
+      console.log(`Fetched ${chunkData.length} records, total so far: ${allData.length}`);
+    }
+
+    offset += chunkSize;
+
+    // Safety break to avoid infinite loop
+    if (offset > 50000) {
+      console.warn('Safety break: stopping at 50,000 records');
+      break;
+    }
+  }
+
+  const data = allData;
 
   if (error) {
     console.error('Error fetching heating data:', error);
