@@ -114,21 +114,27 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
   // Gas power (kW): 10 kW * modulation% when active
   const gasPower: number[] = React.useMemo(() => {
     return sampledData.map((d, i) => {
+      // Only calculate power when gas system is active (DHW pump on)
       if (gasActivity[i] !== 1) return 0;
       if (!d.boilerModulation || d.boilerModulation === '----') return 0;
       const m = parseFloat(d.boilerModulation.replace('%', '').trim());
       const modulation = isNaN(m) ? 0 : m;
+      // Only return power if modulation is greater than 0
+      if (modulation <= 0) return 0;
       return 10 * (modulation / 100);
     });
   }, [sampledData, gasActivity]);
 
-  // Cumulative gas energy (kWh), 1-minute steps
+  // Cumulative gas energy (kWh) - only accumulate when system is active and producing
   const gasEnergy: number[] = React.useMemo(() => {
     const arr: number[] = [];
     let cum = 0;
-    const dt = 1 / 60;
+    const dt = 1 / 60; // 1-minute intervals
     for (let i = 0; i < gasPower.length; i++) {
-      cum += gasPower[i] * dt;
+      // Only add energy when the system is actually consuming gas (power > 0)
+      if (gasPower[i] > 0) {
+        cum += gasPower[i] * dt;
+      }
       arr.push(cum);
     }
     return arr;

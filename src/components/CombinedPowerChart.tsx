@@ -134,34 +134,43 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
     return sampledData.map((d, i) => {
       const tempDiff = d.collectorTemp - d.sensorTemp;
       const active = solarActivity[i] === 1;
+      // Only calculate power when solar system is active AND there's a positive temperature difference
       if (!active || tempDiff <= 0) return 0;
       return (flowRate * 4.18 * tempDiff) / 60;
     });
   }, [sampledData, solarActivity]);
 
-  // Gas power (kW), simple 10 kW * modulation%
+  // Gas power (kW) - only when active and modulating
   const gasPower: number[] = React.useMemo(() => {
     return sampledData.map((d, i) => {
+      // Only calculate power when gas system is active (DHW pump on)
       if (gasActivity[i] !== 1) return 0;
       let modulation = 0;
       if (d.boilerModulation && d.boilerModulation !== '----') {
         const m = parseFloat(d.boilerModulation.replace('%', '').trim());
         modulation = isNaN(m) ? 0 : m;
       }
+      // Only return power if modulation is greater than 0
+      if (modulation <= 0) return 0;
       return 10 * (modulation / 100);
     });
   }, [sampledData, gasActivity]);
 
-  // Cumulative energies (kWh) with 1-minute timesteps
+  // Cumulative energies (kWh) - only accumulate during active periods
   const { solarEnergy, gasEnergy } = React.useMemo(() => {
     const s: number[] = [];
     const g: number[] = [];
     let cs = 0;
     let cg = 0;
-    const dt = 1 / 60;
+    const dt = 1 / 60; // 1-minute intervals
     for (let i = 0; i < solarPower.length; i++) {
-      cs += solarPower[i] * dt;
-      cg += gasPower[i] * dt;
+      // Only accumulate energy when systems are actually producing/consuming
+      if (solarPower[i] > 0) {
+        cs += solarPower[i] * dt;
+      }
+      if (gasPower[i] > 0) {
+        cg += gasPower[i] * dt;
+      }
       s.push(cs);
       g.push(cg);
     }

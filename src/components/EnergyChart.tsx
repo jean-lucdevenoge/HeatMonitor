@@ -131,19 +131,23 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
     return sampledData.map((d, index) => {
       const tempDiff = d.collectorTemp - d.sensorTemp;
       const isSolarActive = solarActivity[index] === 1;
+      // Only calculate power when solar system is active AND there's a positive temperature difference
       if (!isSolarActive || tempDiff <= 0) return 0;
       // Power (kW) ≈ flow_rate (L/min) × specific_heat (4.18 kJ/kg·K) × temp_diff (K) / 60
       return (flowRate * 4.18 * tempDiff) / 60;
     });
   }, [sampledData, solarActivity]);
 
-  // Cumulative solar energy (kWh), 1-minute intervals between points
+  // Cumulative solar energy (kWh) - only accumulate when system is active
   const solarEnergy: number[] = React.useMemo(() => {
     const arr: number[] = [];
     let cumulative = 0;
-    const dtHours = 1 / 60;
+    const dtHours = 1 / 60; // 1-minute intervals
     for (let i = 0; i < solarPower.length; i++) {
-      cumulative += solarPower[i] * dtHours;
+      // Only add energy when the system is actually producing power (active + positive temp diff)
+      if (solarPower[i] > 0) {
+        cumulative += solarPower[i] * dtHours;
+      }
       arr.push(cumulative);
     }
     return arr;
