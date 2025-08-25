@@ -95,6 +95,20 @@ export class HeatingDataService {
       });
       
       return sortedData;
+    } catch (error) {
+      console.error('Error in getAllData:', error);
+      throw error;
+    }
+  }
+
+  // Insert heating data into database
+  static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
+    try {
+      const dbRows = dataPoints.map(this.dataPointToDbRow);
+
+      const { data, error } = await supabase
+        .from('heating_data')
+        .upsert(dbRows, {
           onConflict: 'date,time',
           ignoreDuplicates: true 
         })
