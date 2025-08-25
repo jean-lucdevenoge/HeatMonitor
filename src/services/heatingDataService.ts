@@ -108,11 +108,6 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
 
   const data = allData;
 
-  if (error) {
-    console.error('Error fetching heating data:', error);
-    throw error;
-  }
-
   if (!data || data.length === 0) {
     console.log('Total records: 0');
     return [];
