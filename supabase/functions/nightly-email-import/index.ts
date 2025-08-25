@@ -625,18 +625,32 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
     
     console.log(`📊 Processing ${allHeatingData.length} total heating data records`)
     
+    // Debug: Show sample of raw data
+    console.log('=== SAMPLE RAW DATA ===')
+    allHeatingData.slice(0, 5).forEach((record, i) => {
+      console.log(`${i}: Date="${record.date}" Time="${record.time}" CollectorTemp=${record.collector_temp} SolarStatus="${record.solar_status}" DHWPump="${record.dhw_pump}"`)
+    })
+    console.log('=== END SAMPLE ===')
+    
     // Group data by date
     const dataByDate = new Map<string, any[]>()
     
     allHeatingData.forEach(record => {
       const date = record.date
+      console.log(`Processing record with date: "${date}"`)
       if (!dataByDate.has(date)) {
         dataByDate.set(date, [])
+        console.log(`Created new date group for: "${date}"`)
       }
       dataByDate.get(date)!.push(record)
     })
     
     console.log(`📅 Processing ${dataByDate.size} unique dates`)
+    console.log('=== DATES FOUND ===')
+    Array.from(dataByDate.keys()).forEach(date => {
+      console.log(`Date: "${date}" - Records: ${dataByDate.get(date)?.length}`)
+    })
+    console.log('=== END DATES ===')
     
     // Calculate energy for each date
     for (const [date, dayData] of dataByDate) {
@@ -649,6 +663,12 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       let gasEnergyKwh = 0
       let solarActiveMinutes = 0
       let gasActiveMinutes = 0
+      
+      // Debug counters
+      let solarActiveCount = 0
+      let gasActiveCount = 0
+      let solarPowerCount = 0
+      let gasPowerCount = 0
       
       // Temperature and pressure calculations
       const collectorTemps = dayData.map(d => d.collector_temp).filter(t => t > 0)
@@ -680,12 +700,14 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
                              record.collector_pump === 'On'
         
         if (isSolarActive) {
+          solarActiveCount++
           solarActiveMinutes += intervalMinutes
           const tempDiff = record.collector_temp - record.sensor_temp
           if (tempDiff > 0) {
             // Solar power calculation: flow_rate (5.5 L/min) × specific_heat (4.18 kJ/kg·K) × temp_diff (K) / 60
             const solarPowerKw = (5.5 * 4.18 * tempDiff) / 60
             if (solarPowerKw > 0) {
+              solarPowerCount++
               // Energy (kWh) = Power (kW) × Time (hours)
               solarEnergyKwh += solarPowerKw * intervalHours
             }
@@ -696,6 +718,7 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
         const isGasActive = record.dhw_pump === 'On'
         
         if (isGasActive) {
+          gasActiveCount++
           gasActiveMinutes += intervalMinutes
           if (record.boiler_modulation && record.boiler_modulation !== '----') {
             const modulationStr = record.boiler_modulation.replace('%', '').trim()
@@ -704,6 +727,7 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
               // Gas power calculation: 10 kW × modulation percentage
               const gasPowerKw = 10 * (modulation / 100)
               if (gasPowerKw > 0) {
+                gasPowerCount++
                 // Energy (kWh) = Power (kW) × Time (hours)
                 gasEnergyKwh += gasPowerKw * intervalHours
               }
@@ -714,9 +738,27 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       
       const totalEnergyKwh = solarEnergyKwh + gasEnergyKwh
       
+      console.log(`=== ENERGY CALCULATION DEBUG FOR ${date} ===`)
+      console.log(`Total data points: ${dayData.length}`)
+      console.log(`Solar active count: ${solarActiveCount}`)
+      console.log(`Solar power count: ${solarPowerCount}`)
+      console.log(`Gas active count: ${gasActiveCount}`)
+      console.log(`Gas power count: ${gasPowerCount}`)
+      console.log(`Solar energy: ${solarEnergyKwh} kWh`)
+      console.log(`Gas energy: ${gasEnergyKwh} kWh`)
+      console.log(`Total energy: ${totalEnergyKwh} kWh`)
+      console.log('=== END DEBUG ===')
+      
       // Convert DD.MM.YYYY to YYYY-MM-DD for database
-      const [day, month, year] = date.split('.')
-      const dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      let dbDate = date
+      if (date.includes('.')) {
+        // Convert DD.MM.YYYY to YYYY-MM-DD
+        const [day, month, year] = date.split('.')
+        dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        console.log(`Converted date from "${date}" to "${dbDate}"`)
+      } else {
+        console.log(`Date already in correct format: "${date}"`)
+      }
       
       const energyRecord = {
         date: dbDate,
@@ -754,6 +796,7 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       
       if (energyError) {
         console.error(`❌ Error storing energy data for ${date}:`, energyError)
+        console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
       } else {
         console.log(`✅ Successfully stored energy data for ${date}`)
       }
