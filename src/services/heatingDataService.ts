@@ -63,8 +63,8 @@ export class HeatingDataService {
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
+        .order('date')
+        .order('time');
 
       if (error) {
         console.error('Error fetching heating data:', error);
