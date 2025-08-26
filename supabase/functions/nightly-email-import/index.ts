@@ -308,173 +308,65 @@ async function checkInbox(config: any, accessToken: string): Promise<EmailMessag
   try {
     console.log('Connecting to email inbox...')
     
-    // First, let's explore what folders are available
-    console.log('=== EXPLORING AVAILABLE MAIL FOLDERS ===')
-    const foldersUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/mailFolders`
+    // Direct approach: Get messages from Inbox folder only
+    console.log('📧 FETCHING MESSAGES FROM INBOX FOLDER ONLY...')
     
-    const foldersResponse = await fetch(foldersUrl, {
+    // Use the well-known Inbox folder directly
+    const inboxUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/mailFolders/inbox/messages?$expand=attachments&$orderby=receivedDateTime desc&$top=50`
+    
+    const response = await fetch(inboxUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       }
     })
 
-    if (foldersResponse.ok) {
-      const foldersData = await foldersResponse.json()
-      console.log(`=== FOUND ${foldersData.value.length} FOLDERS ===`)
-      foldersData.value.forEach((folder: any) => {
-        console.log(`📁 FOLDER: "${folder.displayName}"`)
-        console.log(`   - ID: ${folder.id}`)
-        console.log(`   - Total Items: ${folder.totalItemCount}`)
-        console.log(`   - Unread Items: ${folder.unreadItemCount}`)
-        console.log(`   - Well Known Name: ${folder.wellKnownName || 'N/A'}`)
-        console.log(`   - Parent Folder ID: ${folder.parentFolderId || 'N/A'}`)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`❌ FAILED TO GET MESSAGES FROM INBOX: ${response.status}`)
+      console.error(`Error details: ${errorText}`)
+      throw new Error(`Failed to fetch inbox messages: ${response.status} ${errorText}`)
+    }
+
+    const data = await response.json()
+    const messages = data.value || []
+    console.log(`✅ FOUND ${messages.length} MESSAGES IN INBOX`)
+    
+    if (messages.length > 0) {
+      console.log('=== SAMPLE MESSAGES FROM INBOX ===')
+      messages.slice(0, 3).forEach((msg: any, index: number) => {
+        console.log(`📨 MESSAGE ${index + 1}:`)
+        console.log(`   - Subject: "${msg.subject}"`)
+        console.log(`   - From: ${msg.from?.emailAddress?.address}`)
+        console.log(`   - Date: ${msg.receivedDateTime}`)
+        console.log(`   - Is Read: ${msg.isRead}`)
+        console.log(`   - Attachments: ${msg.attachments?.length || 0}`)
+        if (msg.attachments && msg.attachments.length > 0) {
+          msg.attachments.forEach((att: any, attIndex: number) => {
+            console.log(`     📎 Attachment ${attIndex + 1}: ${att.name} (${att.contentType})`)
+          })
+        }
         console.log('   ---')
       })
-      console.log('=== END FOLDER LIST ===')
-      
-      // Find the actual inbox folder
-      const inboxFolder = foldersData.value.find((folder: any) => 
-        folder.displayName.toLowerCase() === 'inbox' || 
-        folder.displayName.toLowerCase() === 'boîte de réception' ||
-        folder.displayName.toLowerCase() === 'posteingang' ||
-        folder.wellKnownName === 'inbox'
-      )
-      
-      if (inboxFolder) {
-        console.log(`✅ FOUND INBOX FOLDER: "${inboxFolder.displayName}"`)
-        console.log(`   - Total Items: ${inboxFolder.totalItemCount}`)
-        console.log(`   - Unread Items: ${inboxFolder.unreadItemCount}`)
-        console.log(`   - Folder ID: ${inboxFolder.id}`)
-        
-        // Try to get messages from the specific inbox folder
-        const inboxMessagesUrl = `https://graph.microsoft.com/v1.0/users/${config.email}/mailFolders/${inboxFolder.id}/messages?$top=50&$expand=attachments&$orderby=receivedDateTime desc`
-        
-        console.log(`📧 FETCHING MESSAGES FROM INBOX...`)
-        const inboxResponse = await fetch(inboxMessagesUrl, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (inboxResponse.ok) {
-          const inboxData = await inboxResponse.json()
-          const inboxMessages = inboxData.value || []
-          console.log(`✅ FOUND ${inboxMessages.length} MESSAGES IN INBOX FOLDER`)
-          
-          if (inboxMessages.length > 0) {
-            console.log('=== SAMPLE MESSAGES FROM INBOX ===')
-            inboxMessages.slice(0, 3).forEach((msg: any, index: number) => {
-              console.log(`📨 MESSAGE ${index + 1}:`)
-              console.log(`   - Subject: "${msg.subject}"`)
-              console.log(`   - From: ${msg.from?.emailAddress?.address}`)
-              console.log(`   - Date: ${msg.receivedDateTime}`)
-              console.log(`   - Is Read: ${msg.isRead}`)
-              console.log(`   - Attachments: ${msg.attachments?.length || 0}`)
-              if (msg.attachments && msg.attachments.length > 0) {
-                msg.attachments.forEach((att: any, attIndex: number) => {
-                  console.log(`     📎 Attachment ${attIndex + 1}: ${att.name} (${att.contentType})`)
-                })
-              }
-              console.log('   ---')
-            })
-            console.log('=== END SAMPLE MESSAGES ===')
-            
-            // Convert to our EmailMessage format
-            const emails: EmailMessage[] = inboxMessages.map((msg: any) => ({
-              id: msg.id,
-              subject: msg.subject || 'No Subject',
-              from: msg.from?.emailAddress?.address || 'Unknown',
-              date: msg.receivedDateTime,
-              body: msg.body?.content || '',
-              attachments: (msg.attachments || []).map((att: any) => ({
-                filename: att.name || 'unknown.txt',
-                contentType: att.contentType || 'application/octet-stream',
-                content: att.contentBytes || ''
-              }))
-            }))
-            
-            console.log(`Processed ${emails.length} emails for import`)
-            return emails
-          }
-        } else {
-          const errorText = await inboxResponse.text()
-          console.error(`❌ FAILED TO GET MESSAGES FROM INBOX FOLDER: ${inboxResponse.status}`)
-          console.error(`Error details: ${errorText}`)
-        }
-      } else {
-        console.log('❌ COULD NOT FIND INBOX FOLDER, TRYING FALLBACK APPROACHES...')
-      }
-    } else {
-      const errorText = await foldersResponse.text()
-      console.error(`❌ FAILED TO GET FOLDERS: ${foldersResponse.status}`)
-      console.error(`Error details: ${errorText}`)
+      console.log('=== END SAMPLE MESSAGES ===')
     }
     
-    // Fallback: Try different approaches to get messages
-    console.log('Trying fallback approaches...')
+    // Convert to our EmailMessage format
+    const emails: EmailMessage[] = messages.map((msg: any) => ({
+      id: msg.id,
+      subject: msg.subject || 'No Subject',
+      from: msg.from?.emailAddress?.address || 'Unknown',
+      date: msg.receivedDateTime,
+      body: msg.body?.content || '',
+      attachments: (msg.attachments || []).map((att: any) => ({
+        filename: att.name || 'unknown.txt',
+        contentType: att.contentType || 'application/octet-stream',
+        content: att.contentBytes || ''
+      }))
+    }))
     
-    const approaches = [
-      {
-        name: 'Recent messages (all)',
-        url: `https://graph.microsoft.com/v1.0/users/${config.email}/messages?$top=50&$expand=attachments&$orderby=receivedDateTime desc`
-      },
-      {
-        name: 'Unread messages only',
-        url: `https://graph.microsoft.com/v1.0/users/${config.email}/messages?$filter=isRead eq false&$expand=attachments&$top=50`
-      },
-      {
-        name: 'Messages from last 7 days',
-        url: `https://graph.microsoft.com/v1.0/users/${config.email}/messages?$filter=receivedDateTime ge ${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}&$expand=attachments&$top=50`
-      }
-    ]
-    
-    for (const approach of approaches) {
-      console.log(`Trying approach: ${approach.name}`)
-      
-      const response = await fetch(approach.url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        const messages = data.value || []
-        console.log(`${approach.name}: Found ${messages.length} messages`)
-        
-        if (messages.length > 0) {
-          console.log(`Sample messages from ${approach.name}:`)
-          messages.slice(0, 3).forEach((msg: any, index: number) => {
-            console.log(`${index + 1}. Subject: "${msg.subject}" | From: ${msg.from?.emailAddress?.address} | Date: ${msg.receivedDateTime} | Read: ${msg.isRead} | Attachments: ${msg.attachments?.length || 0}`)
-          })
-          
-          // Convert to our EmailMessage format and return the first successful approach
-          const emails: EmailMessage[] = messages.map((msg: any) => ({
-            id: msg.id,
-            subject: msg.subject || 'No Subject',
-            from: msg.from?.emailAddress?.address || 'Unknown',
-            date: msg.receivedDateTime,
-            body: msg.body?.content || '',
-            attachments: (msg.attachments || []).map((att: any) => ({
-              filename: att.name || 'unknown.txt',
-              contentType: att.contentType || 'application/octet-stream',
-              content: att.contentBytes || ''
-            }))
-          }))
-          
-          console.log(`Successfully processed ${emails.length} emails using ${approach.name}`)
-          return emails
-        }
-      } else {
-        console.error(`${approach.name} failed: ${response.status}`)
-      }
-    }
-    
-    console.log('No emails found with any approach')
-    return []
+    console.log(`Successfully processed ${emails.length} emails from INBOX only`)
+    return emails
     
   } catch (error) {
     console.error('Error checking inbox:', error)
