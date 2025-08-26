@@ -607,8 +607,7 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
     const { data: allHeatingData, error: fetchError } = await supabaseClient
       .from('heating_data')
       .select('*')
-      .order('date')
-      .order('time')
+      .order('created_at')
     
     if (fetchError) {
       console.error('❌ Error fetching heating data:', fetchError)
@@ -633,7 +632,19 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
     const dataByDate = new Map<string, any[]>()
     
     allHeatingData.forEach(record => {
-      const date = record.date
+      // Normalize date format - ensure DD.MM.YYYY format
+      let date = record.date
+      if (date && date.includes('.')) {
+        const parts = date.split('.')
+        if (parts.length === 3) {
+          // Ensure DD.MM.YYYY format with zero padding
+          const day = parts[0].padStart(2, '0')
+          const month = parts[1].padStart(2, '0')
+          const year = parts[2]
+          date = `${day}.${month}.${year}`
+        }
+      }
+      
       console.log(`Processing record with date: "${date}"`)
       if (!dataByDate.has(date)) {
         dataByDate.set(date, [])
@@ -648,6 +659,20 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       console.log(`Date: "${date}" - Records: ${dataByDate.get(date)?.length}`)
     })
     console.log('=== END DATES ===')
+    
+    // Clear existing energy calculations to ensure fresh data
+    console.log('🗑️ Clearing existing energy calculations...')
+    const { error: deleteError } = await supabaseClient
+      .from('energy_calculations')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+    
+    if (deleteError) {
+      console.error('❌ Error clearing energy calculations:', deleteError)
+      // Continue anyway, upsert will handle duplicates
+    } else {
+      console.log('✅ Cleared existing energy calculations')
+    }
     
     // Calculate energy for each date
     for (const [date, dayData] of dataByDate) {
@@ -785,17 +810,16 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       })
       
       // Insert or update energy calculation
-      const { error: energyError } = await supabaseClient
+      const { data: insertedData, error: energyError } = await supabaseClient
         .from('energy_calculations')
-        .upsert(energyRecord, {
-          onConflict: 'date'
-        })
+        .insert(energyRecord)
+        .select('id')
       
       if (energyError) {
         console.error(`❌ Error storing energy data for ${date}:`, energyError)
         console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
       } else {
-        console.log(`✅ Successfully stored energy data for ${date}`)
+        console.log(`✅ Successfully stored energy data for ${date} (ID: ${insertedData?.[0]?.id})`)
       }
     }
     
