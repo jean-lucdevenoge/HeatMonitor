@@ -138,18 +138,33 @@ serve(async (req) => {
               if (parsedData.length > 0) {
                 console.log(`Attempting to insert ${parsedData.length} records into database...`)
                 
+                // Log sample of data being inserted for debugging
+                console.log('📊 Sample data being inserted:')
+                parsedData.slice(0, 3).forEach((record, i) => {
+                  console.log(`  ${i + 1}. Date: "${record.date}", Time: "${record.time}", Collector: ${record.collector_temp}°C`)
+                })
+                
                 // Upsert data into database (handles both insert and update)
                 const { data: upsertedData, error } = await supabaseClient
                   .from('heating_data')
                   .upsert(parsedData, {
                     onConflict: 'date,time',
-                    ignoreDuplicates: false
+                    ignoreDuplicates: true
                   })
                   .select('id')
 
                 if (error) {
                   console.error('❌ Database insertion error:', error)
                   console.error('Error details:', JSON.stringify(error, null, 2))
+                  
+                  // Log problematic data for debugging
+                  if (error.message && error.message.includes('date')) {
+                    console.error('🔍 Date format issue detected. Sample dates from CSV:')
+                    parsedData.slice(0, 5).forEach((record, i) => {
+                      console.error(`  ${i + 1}. "${record.date}" (format: ${record.date.match(/^\d{2}\.\d{2}\.\d{4}$/) ? 'DD.MM.YYYY ✅' : 'INVALID ❌'})`)
+                    })
+                  }
+                  
                   throw error
                 } else {
                   const inserted = upsertedData?.length || 0
@@ -567,8 +582,16 @@ function parseHeatingCSV(csvContent: string) {
   const parsedRecords = dataLines.map((line, index) => {
     const values = line.split(';').map(v => v.trim())
     
+    // Keep the original DD.MM.YYYY format for the date field
+    const originalDate = values[0] || ''
+    
+    // Validate date format
+    if (!originalDate.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+      console.log(`⚠️ Invalid date format at line ${index}: "${originalDate}"`)
+    }
+    
     const record = {
-      date: values[0] || '',
+      date: originalDate,
       time: values[1] || '',
       collector_temp: parseFloat(values[2]) || 0,
       outside_temp: parseFloat(values[3]) || 0,
@@ -594,7 +617,26 @@ function parseHeatingCSV(csvContent: string) {
     return record
   })
   
+  // Sort the records by date and time to ensure proper chronological order
+  parsedRecords.sort((a, b) => {
+    // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+    const dateA = a.date.split('.').reverse().join('-')
+    const dateB = b.date.split('.').reverse().join('-')
+    
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB)
+    }
+    
+    // If dates are the same, sort by time
+    return a.time.localeCompare(b.time)
+  })
+  
   console.log(`✅ Successfully parsed ${parsedRecords.length} records`)
+  
+  if (parsedRecords.length > 0) {
+    console.log(`📅 Date range: ${parsedRecords[0].date} ${parsedRecords[0].time} to ${parsedRecords[parsedRecords.length - 1].date} ${parsedRecords[parsedRecords.length - 1].time}`)
+  }
+  
   return parsedRecords
 }
 
@@ -751,7 +793,13 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       if (date.includes('.')) {
         // Convert DD.MM.YYYY to YYYY-MM-DD
         const [day, month, year] = date.split('.')
-        dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        // Validate the date parts
+        if (year && month && day && year.length === 4 && month.length <= 2 && day.length <= 2) {
+          dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        } else {
+          console.log(`⚠️ Invalid date parts for "${date}": day="${day}", month="${month}", year="${year}"`)
+          continue // Skip this date if invalid
+        }
         console.log(`Converted date from "${date}" to "${dbDate}"`)
       } else {
         console.log(`Date already in correct format: "${date}"`)
