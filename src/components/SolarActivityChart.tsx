@@ -92,7 +92,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
 
   // Time labels
   const chartLabels: Date[] = React.useMemo(() => {
-    return sampledData.map((d) => {
+    const labels = sampledData.map((d) => {
       const [day, month, year] = d.date.split('.');
       const [hours, minutes] = d.time.split(':');
       return new Date(
@@ -103,17 +103,21 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
         parseInt(minutes)
       );
     });
+    // Reverse the order to show newest first
+    return labels.reverse();
   }, [sampledData]);
 
   // Solar activity (0/1)
   const solarActivity: number[] = React.useMemo(() => {
-    return sampledData.map((d) => {
+    const activity = sampledData.map((d) => {
       const isSolarActive =
         d.solarStatus.includes('Charging') ||
         d.collectorPump === 'On' ||
         d.collectorTemp > d.dhwTempTop + 5;
       return isSolarActive ? 1 : 0;
     });
+    // Reverse to match the reversed labels
+    return activity.reverse();
   }, [sampledData]);
 
   // Marker drawing plugin (safe to rebuild per render)
@@ -213,7 +217,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
       datasets: [
         {
           label: t('chart.collectorTempB6'),
-          data: sampledData.map((d) => d.collectorTemp),
+          data: [...sampledData].reverse().map((d) => d.collectorTemp),
           borderColor: '#EAB308',
           backgroundColor: 'rgba(234, 179, 8, 0.1)',
           borderWidth: 1,
@@ -222,7 +226,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
         },
         {
           label: t('chart.dhwTemp'),
-          data: sampledData.map((d) => d.dhwTempTop),
+          data: [...sampledData].reverse().map((d) => d.dhwTempTop),
           borderColor: '#DC2626',
           backgroundColor: 'rgba(220, 38, 38, 0.1)',
           borderWidth: 1,
@@ -231,7 +235,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
         },
         {
           label: t('chart.b31Temp'),
-          data: sampledData.map((d) => d.sensorTemp),
+          data: [...sampledData].reverse().map((d) => d.sensorTemp),
           borderColor: '#8B5CF6',
           backgroundColor: 'rgba(139, 92, 246, 0.1)',
           borderWidth: 1,
