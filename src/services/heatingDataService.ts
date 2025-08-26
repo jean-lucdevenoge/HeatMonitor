@@ -83,8 +83,7 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     const { data: chunkData, error } = await supabase
       .from('heating_data')
       .select('*')
-      .order('date')
-      .order('time')
+      .order('created_at')
       .range(offset, offset + chunkSize - 1);
 
     if (error) {
@@ -137,16 +136,23 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   
   // Sort properly by converting DD.MM.YYYY to comparable format
   dataPoints.sort((a, b) => {
-    // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-    const dateA = a.date.split('.').reverse().join('-');
-    const dateB = b.date.split('.').reverse().join('-');
+    // Convert DD.MM.YYYY to Date objects for proper comparison
+    const parseDate = (dateStr: string, timeStr: string) => {
+      const [day, month, year] = dateStr.split('.');
+      const [hours, minutes] = timeStr.split(':');
+      return new Date(
+        parseInt(year),
+        parseInt(month) - 1, // Month is 0-indexed
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes)
+      );
+    };
     
-    if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
-    }
+    const dateTimeA = parseDate(a.date, a.time);
+    const dateTimeB = parseDate(b.date, b.time);
     
-    // If dates are the same, sort by time
-    return a.time.localeCompare(b.time);
+    return dateTimeA.getTime() - dateTimeB.getTime();
   });
 
   console.log('AFTER JAVASCRIPT SORTING (first 5):');
