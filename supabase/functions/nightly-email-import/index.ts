@@ -1,3 +1,4 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -26,7 +27,7 @@ interface AzureTokenResponse {
   expires_in: number;
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -606,7 +607,8 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
     const { data: allHeatingData, error: fetchError } = await supabaseClient
       .from('heating_data')
       .select('*')
-      .order('created_at')
+      .order('date')
+      .order('time')
     
     if (fetchError) {
       console.error('❌ Error fetching heating data:', fetchError)
@@ -631,19 +633,7 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
     const dataByDate = new Map<string, any[]>()
     
     allHeatingData.forEach(record => {
-      // Normalize date format - ensure DD.MM.YYYY format
-      let date = record.date
-      if (date && date.includes('.')) {
-        const parts = date.split('.')
-        if (parts.length === 3) {
-          // Ensure DD.MM.YYYY format with zero padding
-          const day = parts[0].padStart(2, '0')
-          const month = parts[1].padStart(2, '0')
-          const year = parts[2]
-          date = `${day}.${month}.${year}`
-        }
-      }
-      
+      const date = record.date
       console.log(`Processing record with date: "${date}"`)
       if (!dataByDate.has(date)) {
         dataByDate.set(date, [])
@@ -794,20 +784,18 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
         dataPoints: dayData.length
       })
       
-      // Upsert energy calculation (insert if new, update if exists)
-      const { data: upsertedData, error: energyError } = await supabaseClient
+      // Insert or update energy calculation
+      const { error: energyError } = await supabaseClient
         .from('energy_calculations')
         .upsert(energyRecord, {
-          onConflict: 'date',
-          ignoreDuplicates: false
+          onConflict: 'date'
         })
-        .select('id')
       
       if (energyError) {
         console.error(`❌ Error storing energy data for ${date}:`, energyError)
         console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
       } else {
-        console.log(`✅ Successfully upserted energy data for ${date} (ID: ${upsertedData?.[0]?.id})`)
+        console.log(`✅ Successfully stored energy data for ${date}`)
       }
     }
     
