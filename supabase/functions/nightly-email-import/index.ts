@@ -144,13 +144,37 @@ serve(async (req) => {
                   console.log(`  ${i + 1}. Date: "${record.date}", Time: "${record.time}", Collector: ${record.collector_temp}°C`)
                 })
                 
-                // Upsert data into database (handles both insert and update)
+                // Check for existing data first to avoid duplicates
+                console.log('🔍 Checking for existing data...')
+                const existingDataCheck = await supabaseClient
+                  .from('heating_data')
+                  .select('date, time')
+                  .in('date', [...new Set(parsedData.map(r => r.date))])
+                
+                const existingKeys = new Set()
+                if (existingDataCheck.data) {
+                  existingDataCheck.data.forEach(row => {
+                    existingKeys.add(`${row.date}_${row.time}`)
+                  })
+                }
+                
+                // Filter out existing records
+                const newRecords = parsedData.filter(record => {
+                  const key = `${record.date}_${record.time}`
+                  return !existingKeys.has(key)
+                })
+                
+                console.log(`📊 Found ${parsedData.length} total records, ${newRecords.length} are new, ${parsedData.length - newRecords.length} already exist`)
+                
+                if (newRecords.length === 0) {
+                  console.log('ℹ️ No new records to insert - all data already exists')
+                  continue
+                }
+                
+                // Insert only new data
                 const { data: upsertedData, error } = await supabaseClient
                   .from('heating_data')
-                  .upsert(parsedData, {
-                    onConflict: 'date,time',
-                    ignoreDuplicates: true
-                  })
+                  .insert(newRecords)
                   .select('id')
 
                 if (error) {
@@ -160,7 +184,7 @@ serve(async (req) => {
                   // Log problematic data for debugging
                   if (error.message && error.message.includes('date')) {
                     console.error('🔍 Date format issue detected. Sample dates from CSV:')
-                    parsedData.slice(0, 5).forEach((record, i) => {
+                    newRecords.slice(0, 5).forEach((record, i) => {
                       console.error(`  ${i + 1}. "${record.date}" (format: ${record.date.match(/^\d{2}\.\d{2}\.\d{4}$/) ? 'DD.MM.YYYY ✅' : 'INVALID ❌'})`)
                     })
                   }
@@ -168,8 +192,7 @@ serve(async (req) => {
                   throw error
                 } else {
                   const inserted = upsertedData?.length || 0
-                  const duplicates = parsedData.length - inserted
-                  console.log(`✅ Successfully upserted ${inserted} records, ${duplicates} were duplicates from ${csvAttachment.filename}`)
+                  console.log(`✅ Successfully inserted ${inserted} new records from ${csvAttachment.filename}`)
                   importedCount += inserted
                 }
 
@@ -579,15 +602,28 @@ function parseHeatingCSV(csvContent: string) {
     console.log('Valid data lines found (content not logged for privacy)')
   }
   
+  // Date validation: must be after 21.08.2024
+  const minDate = new Date('2024-08-21')
+  
   const parsedRecords = dataLines.map((line, index) => {
     const values = line.split(';').map(v => v.trim())
     
-    // Keep the original DD.MM.YYYY format for the date field
+    // Validate and keep the original DD.MM.YYYY format for the date field
     const originalDate = values[0] || ''
     
     // Validate date format
     if (!originalDate.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
       console.log(`⚠️ Invalid date format at line ${index}: "${originalDate}"`)
+      return null // Skip invalid dates
+    }
+    
+    // Check if date is after minimum date (21.08.2024)
+    const [day, month, year] = originalDate.split('.')
+    const recordDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    
+    if (recordDate < minDate) {
+      console.log(`⚠️ Date before minimum (21.08.2024) at line ${index}: "${originalDate}"`)
+      return null // Skip dates before minimum
     }
     
     const record = {
@@ -615,7 +651,7 @@ function parseHeatingCSV(csvContent: string) {
     }
     
     return record
-  })
+  }).filter(record => record !== null) // Remove null records (invalid dates)
   
   // Sort the records by date and time to ensure proper chronological order
   parsedRecords.sort((a, b) => {
@@ -643,7 +679,20 @@ function parseHeatingCSV(csvContent: string) {
 // Function to calculate and store daily energy data for ALL dates in database
 async function calculateAllDailyEnergy(supabaseClient: any) {
   try {
-    console.log('🔄 Starting daily energy calculations for all dates...')
+    console.log('🔄 Starting daily energy calculations...')
+    
+    // Get unique dates from heating data that don't have energy calculations yet
+    const { data: existingCalculations, error: calcError } = await supabaseClient
+      .from('energy_calculations')
+      .select('date')
+    
+    if (calcError) {
+      console.error('❌ Error fetching existing calculations:', calcError)
+      throw calcError
+    }
+    
+    const existingDates = new Set(existingCalculations?.map(calc => calc.date) || [])
+    console.log(`📊 Found ${existingDates.size} existing energy calculations`)
     
     // Get ALL heating data from database, ordered by date and time
     const { data: allHeatingData, error: fetchError } = await supabaseClient
@@ -691,8 +740,28 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
     })
     console.log('=== END DATES ===')
     
+    let newCalculationsCount = 0
+    
     // Calculate energy for each date
     for (const [date, dayData] of dataByDate) {
+      // Convert DD.MM.YYYY to YYYY-MM-DD for database storage
+      let dbDate = date
+      if (date.includes('.')) {
+        const [day, month, year] = date.split('.')
+        if (year && month && day && year.length === 4 && month.length <= 2 && day.length <= 2) {
+          dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        } else {
+          console.log(`⚠️ Invalid date parts for "${date}": day="${day}", month="${month}", year="${year}"`)
+          continue
+        }
+      }
+      
+      // Skip if calculation already exists for this date
+      if (existingDates.has(dbDate)) {
+        console.log(`⏭️ Skipping ${date} (${dbDate}) - calculation already exists`)
+        continue
+      }
+      
       console.log(`📊 Calculating energy for ${date} (${dayData.length} data points)`)
       
       // Sort data by time for proper calculation
@@ -788,23 +857,6 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       console.log(`Total energy: ${totalEnergyKwh} kWh`)
       console.log('=== END DEBUG ===')
       
-      // Convert DD.MM.YYYY to YYYY-MM-DD for database
-      let dbDate = date
-      if (date.includes('.')) {
-        // Convert DD.MM.YYYY to YYYY-MM-DD
-        const [day, month, year] = date.split('.')
-        // Validate the date parts
-        if (year && month && day && year.length === 4 && month.length <= 2 && day.length <= 2) {
-          dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-        } else {
-          console.log(`⚠️ Invalid date parts for "${date}": day="${day}", month="${month}", year="${year}"`)
-          continue // Skip this date if invalid
-        }
-        console.log(`Converted date from "${date}" to "${dbDate}"`)
-      } else {
-        console.log(`Date already in correct format: "${date}"`)
-      }
-      
       const energyRecord = {
         date: dbDate,
         solar_energy_kwh: Math.round(solarEnergyKwh * 1000) / 1000, // Round to 3 decimal places
@@ -835,19 +887,18 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       // Insert or update energy calculation
       const { error: energyError } = await supabaseClient
         .from('energy_calculations')
-        .upsert(energyRecord, {
-          onConflict: 'date'
-        })
+        .insert(energyRecord)
       
       if (energyError) {
         console.error(`❌ Error storing energy data for ${date}:`, energyError)
         console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
       } else {
         console.log(`✅ Successfully stored energy data for ${date}`)
+        newCalculationsCount++
       }
     }
     
-    console.log('✅ Daily energy calculations completed')
+    console.log(`✅ Daily energy calculations completed - ${newCalculationsCount} new calculations created`)
     
   } catch (error) {
     console.error('❌ Error in daily energy calculations:', error)
