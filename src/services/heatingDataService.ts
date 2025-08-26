@@ -135,18 +135,18 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   // Convert to data points and sort properly by date/time
   const dataPoints = data.map(this.dbRowToDataPoint);
   
-  // Sort properly by converting DD.MM.YYYY to comparable format
+  // Sort properly by converting DD.MM.YYYY to comparable format (newest first)
   dataPoints.sort((a, b) => {
     // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
     const dateA = a.date.split('.').reverse().join('-');
     const dateB = b.date.split('.').reverse().join('-');
     
     if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
+      return dateB.localeCompare(dateA); // Reversed for newest first
     }
     
-    // If dates are the same, sort by time
-    return a.time.localeCompare(b.time);
+    // If dates are the same, sort by time (newest first)
+    return b.time.localeCompare(a.time);
   });
 
   console.log('AFTER JAVASCRIPT SORTING (first 5):');
