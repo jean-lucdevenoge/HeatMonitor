@@ -198,7 +198,7 @@ serve(async (req) => {
                   // Calculate energy for the date from the CSV filename
                   if (inserted > 0) {
                     console.log(`🔋 Calculating energy for CSV file: ${csvAttachment.filename}`)
-                    await calculateEnergyForCsvFile(supabaseClient, csvAttachment.filename)
+                    await calculateEnergyForCsvData(supabaseClient, parsedData)
                   }
                 }
 
@@ -570,38 +570,41 @@ function parseHeatingCSV(csvContent: string) {
   return parsedRecords
 }
 
-// Function to calculate energy for a specific date based on CSV filename
-async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) {
+// Function to calculate energy for dates found in the CSV data
+async function calculateEnergyForCsvData(supabaseClient: any, parsedData: any[]) {
   try {
-    console.log(`🔋 Starting energy calculation for CSV file: ${filename}`)
+    console.log(`🔋 Starting energy calculation for CSV data with ${parsedData.length} records`)
     
-    // Extract date from filename (e.g., "trend_data_1_20250826" -> "20250826")
-    const dateMatch = filename.match(/(\d{8})/)
-    if (!dateMatch) {
-      console.log(`⚠️ Could not extract YYYYMMDD date from filename: ${filename}`)
+    if (!parsedData || parsedData.length === 0) {
+      console.log(`⚠️ No parsed data provided for energy calculation`)
       return
     }
     
-    const yyyymmdd = dateMatch[1] // YYYYMMDD format
-    console.log(`📅 Extracted YYYYMMDD date from filename: ${yyyymmdd}`)
+    // Get unique dates from the CSV data
+    const uniqueDates = [...new Set(parsedData.map(record => record.date))]
+    console.log(`📅 Found ${uniqueDates.length} unique dates in CSV data:`, uniqueDates)
     
-    // Convert YYYYMMDD to YYYY-MM-DD for database queries and DD.MM.YYYY for heating_data table
-    const year = yyyymmdd.substring(0, 4)
-    const month = yyyymmdd.substring(4, 6)
-    const day = yyyymmdd.substring(6, 8)
+    // Calculate energy for each unique date
+    for (const csvDate of uniqueDates) {
+      await calculateEnergyForDate(supabaseClient, csvDate)
+    }
     
-    console.log(`🔍 Date parsing breakdown:`)
-    console.log(`  - Original: ${yyyymmdd}`)
-    console.log(`  - Year: "${year}" (positions 0-3)`)
-    console.log(`  - Month: "${month}" (positions 4-5)`)
-    console.log(`  - Day: "${day}" (positions 6-7)`)
+  } catch (error) {
+    console.error(`❌ Error calculating energy for CSV data:`, error)
+    throw error
+  }
+}
+
+// Function to calculate energy for a specific date
+async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
+  try {
+    console.log(`🔋 Starting energy calculation for date: ${csvDate}`)
     
-    const dbDate = `${year}-${month}-${day}` // For energy_calculations table
-    const csvDate = `${day}.${month}.${year}` // For heating_data table (DD.MM.YYYY format)
+    // Convert DD.MM.YYYY to YYYY-MM-DD for database queries
+    const [day, month, year] = csvDate.split('.')
+    const dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
     
-    console.log(`🔍 Final conversion:`)
-    console.log(`  - DB format (YYYY-MM-DD): "${dbDate}"`)
-    console.log(`  - CSV format (DD.MM.YYYY): "${csvDate}"`)
+    console.log(`🔍 Date conversion: ${csvDate} -> ${dbDate}`)
     console.log(`🔍 Looking for heating data on date: ${csvDate}`)
     
     // Check if energy calculation already exists for this date
@@ -863,7 +866,7 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     }
     
   } catch (error) {
-    console.error(`❌ Error calculating energy for CSV file ${filename}:`, error)
+    console.error(`❌ Error calculating energy for date ${csvDate}:`, error)
     throw error
   }
 }
