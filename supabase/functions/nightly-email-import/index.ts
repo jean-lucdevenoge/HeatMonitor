@@ -590,10 +590,18 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     const month = yyyymmdd.substring(4, 6)
     const day = yyyymmdd.substring(6, 8)
     
+    console.log(`🔍 Date parsing breakdown:`)
+    console.log(`  - Original: ${yyyymmdd}`)
+    console.log(`  - Year: "${year}" (positions 0-3)`)
+    console.log(`  - Month: "${month}" (positions 4-5)`)
+    console.log(`  - Day: "${day}" (positions 6-7)`)
+    
     const dbDate = `${year}-${month}-${day}` // For energy_calculations table
     const csvDate = `${day}.${month}.${year}` // For heating_data table (DD.MM.YYYY format)
     
-    console.log(`🔍 Date conversion: ${yyyymmdd} -> CSV format: ${csvDate}, DB format: ${dbDate}`)
+    console.log(`🔍 Final conversion:`)
+    console.log(`  - DB format (YYYY-MM-DD): "${dbDate}"`)
+    console.log(`  - CSV format (DD.MM.YYYY): "${csvDate}"`)
     console.log(`🔍 Looking for heating data on date: ${csvDate}`)
     
     // Check if energy calculation already exists for this date
