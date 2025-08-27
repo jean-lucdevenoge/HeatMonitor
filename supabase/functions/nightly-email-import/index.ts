@@ -650,12 +650,6 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     let solarPowerCount = 0
     let gasPowerCount = 0
     
-    // Debug counters
-    let solarActiveCount = 0
-    let gasActiveCount = 0
-    let solarPowerCount = 0
-    let gasPowerCount = 0
-    
     // Temperature and pressure calculations
     const collectorTemps = dayData.map(d => Number(d.collector_temp) || 0).filter(t => t > 0)
     const dhwTemps = dayData.map(d => Number(d.dhw_temp_top) || 0).filter(t => t > 0)
