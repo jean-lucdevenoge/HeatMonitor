@@ -584,6 +584,17 @@ async function calculateEnergyForCsvData(supabaseClient: any, parsedData: any[])
     const uniqueDates = [...new Set(parsedData.map(record => record.date))]
     console.log(`📅 Found ${uniqueDates.length} unique dates in CSV data:`, uniqueDates)
     
+    // Show data distribution per date
+    uniqueDates.forEach(date => {
+      const recordsForDate = parsedData.filter(record => record.date === date)
+      console.log(`📊 Date ${date}: ${recordsForDate.length} records`)
+      if (recordsForDate.length > 0) {
+        const firstTime = recordsForDate[0].time
+        const lastTime = recordsForDate[recordsForDate.length - 1].time
+        console.log(`   Time range: ${firstTime} - ${lastTime}`)
+      }
+    })
+    
     // Calculate energy for each unique date
     for (const csvDate of uniqueDates) {
       await calculateEnergyForDate(supabaseClient, csvDate)
@@ -657,10 +668,22 @@ async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
     console.log(`📊 Found ${dayData.length} data points for ${csvDate}`)
     console.log(`📅 Date range in data: ${dayData[0]?.date} ${dayData[0]?.time} to ${dayData[dayData.length-1]?.date} ${dayData[dayData.length-1]?.time}`)
     
+    // Check if this might be a partial day (less than expected data points)
+    const expectedDataPoints = 24 * 60 // 1440 points for full day (1 per minute)
+    if (dayData.length < expectedDataPoints * 0.5) { // Less than 50% of expected data
+      console.log(`⚠️ WARNING: Only ${dayData.length} data points for ${csvDate} (expected ~${expectedDataPoints} for full day)`)
+      console.log(`⚠️ This might be a partial day - energy calculation may be low`)
+    }
+    
     // Debug: Show sample of data
     console.log('=== SAMPLE DATA FOR ENERGY CALCULATION ===')
     dayData.slice(0, 3).forEach((record, i) => {
       console.log(`${i + 1}: Time="${record.time}" CollectorTemp=${record.collector_temp} SensorTemp=${record.sensor_temp} SolarStatus="${record.solar_status || 'null'}" DHWPump="${record.dhw_pump || 'null'}" BoilerMod="${record.boiler_modulation || 'null'}"`)
+    })
+    console.log('=== LAST 3 RECORDS ===')
+    dayData.slice(-3).forEach((record, i) => {
+      const index = dayData.length - 3 + i
+      console.log(`${index + 1}: Time="${record.time}" CollectorTemp=${record.collector_temp} SensorTemp=${record.sensor_temp} SolarStatus="${record.solar_status || 'null'}" DHWPump="${record.dhw_pump || 'null'}" BoilerMod="${record.boiler_modulation || 'null'}"`)
     })
     console.log('=== END SAMPLE ===')
     
@@ -791,6 +814,8 @@ async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
     
     console.log(`=== ENERGY CALCULATION RESULTS FOR ${csvDate} ===`)
     console.log(`Total data points: ${dayData.length}`)
+    console.log(`Expected for full day: ~${24 * 60} (1 per minute)`)
+    console.log(`Data completeness: ${((dayData.length / (24 * 60)) * 100).toFixed(1)}%`)
     console.log(`Solar active count: ${solarActiveCount}`)
     console.log(`Solar power count: ${solarPowerCount}`)
     console.log(`Gas active count: ${gasActiveCount}`)
@@ -798,6 +823,19 @@ async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
     console.log(`Solar energy: ${solarEnergyKwh.toFixed(3)} kWh`)
     console.log(`Gas energy: ${gasEnergyKwh.toFixed(3)} kWh`)
     console.log(`Total energy: ${totalEnergyKwh.toFixed(3)} kWh`)
+    
+    // Special handling for partial days
+    if (dayData.length < (24 * 60) * 0.5) {
+      console.log(`⚠️ PARTIAL DAY DETECTED: Only ${dayData.length} data points`)
+      console.log(`⚠️ Energy values may be lower than expected due to incomplete data`)
+      
+      // Check if we should skip this calculation
+      if (dayData.length < 60) { // Less than 1 hour of data
+        console.log(`❌ SKIPPING: Too few data points (${dayData.length}) for meaningful energy calculation`)
+        return
+      }
+    }
+    
     console.log('=== END CALCULATION RESULTS ===')
     console.log(`Total data points: ${dayData.length}`)
     console.log(`Solar active count: ${solarActiveCount}`)
