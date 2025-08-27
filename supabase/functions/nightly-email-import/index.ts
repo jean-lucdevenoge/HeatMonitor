@@ -194,6 +194,12 @@ serve(async (req) => {
                   const inserted = upsertedData?.length || 0
                   console.log(`✅ Successfully inserted ${inserted} new records from ${csvAttachment.filename}`)
                   importedCount += inserted
+                  
+                  // Calculate energy for the date from the CSV filename
+                  if (inserted > 0) {
+                    console.log(`🔋 Calculating energy for CSV file: ${csvAttachment.filename}`)
+                    await calculateEnergyForCsvFile(supabaseClient, csvAttachment.filename)
+                  }
                 }
 
               } else {
@@ -223,10 +229,6 @@ serve(async (req) => {
         }
       }
     }
-
-    // Calculate and store daily energy data for ALL dates in database
-    console.log('📊 Recalculating daily energy data for all dates...')
-    await calculateAllDailyEnergy(supabaseClient)
 
     const result = {
       success: true,
@@ -568,16 +570,49 @@ function parseHeatingCSV(csvContent: string) {
   return parsedRecords
 }
 
-// Function to calculate and store daily energy data for ALL dates in database
-async function calculateAllDailyEnergy(supabaseClient: any) {
+// Function to calculate energy for a specific date based on CSV filename
+async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) {
   try {
-    console.log('🔄 Starting daily energy calculations...')
+    console.log(`🔋 Starting energy calculation for CSV file: ${filename}`)
     
-    // Get ALL heating data from database, ordered by date and time
-    const { data: allHeatingData, error: fetchError } = await supabaseClient
+    // Extract date from filename (e.g., "data_26.08.2024.csv" -> "26.08.2024")
+    const dateMatch = filename.match(/(\d{2}\.\d{2}\.\d{4})/)
+    if (!dateMatch) {
+      console.log(`⚠️ Could not extract date from filename: ${filename}`)
+      return
+    }
+    
+    const csvDate = dateMatch[1] // DD.MM.YYYY format
+    console.log(`📅 Extracted date from filename: ${csvDate}`)
+    
+    // Convert DD.MM.YYYY to YYYY-MM-DD for database queries
+    const [day, month, year] = csvDate.split('.')
+    const dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    
+    console.log(`🔍 Looking for data on date: ${csvDate} (DB format: ${dbDate})`)
+    
+    // Check if energy calculation already exists for this date
+    const { data: existingCalc, error: existingError } = await supabaseClient
+      .from('energy_calculations')
+      .select('id')
+      .eq('date', dbDate)
+      .single()
+    
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error('❌ Error checking existing calculations:', existingError)
+      throw existingError
+    }
+    
+    if (existingCalc) {
+      console.log(`⏭️ Energy calculation already exists for ${csvDate}, skipping`)
+      return
+    }
+    
+    // Get heating data for this specific date
+    const { data: dayData, error: fetchError } = await supabaseClient
       .from('heating_data')
       .select('*')
-      .order('date')
+      .eq('date', csvDate)
       .order('time')
     
     if (fetchError) {
@@ -585,248 +620,168 @@ async function calculateAllDailyEnergy(supabaseClient: any) {
       throw fetchError
     }
     
-    if (!allHeatingData || allHeatingData.length === 0) {
-      console.log('ℹ️ No heating data found in database')
+    if (!dayData || dayData.length === 0) {
+      console.log(`ℹ️ No heating data found for date ${csvDate}`)
       return
     }
     
-    console.log(`📊 Processing ${allHeatingData.length} total heating data records`)
+    console.log(`📊 Found ${dayData.length} data points for ${csvDate}`)
     
-    // Debug: Show sample of raw data
-    console.log('=== SAMPLE RAW DATA ===')
-    allHeatingData.slice(0, 5).forEach((record, i) => {
-      console.log(`${i}: Date="${record.date}" Time="${record.time}" CollectorTemp=${record.collector_temp} SolarStatus="${record.solar_status || 'null'}" DHWPump="${record.dhw_pump || 'null'}"`)
-    })
-    console.log('=== LAST 5 RAW DATA ===')
-    allHeatingData.slice(-5).forEach((record, i) => {
-      console.log(`${allHeatingData.length - 5 + i}: Date="${record.date}" Time="${record.time}" CollectorTemp=${record.collector_temp} SolarStatus="${record.solar_status || 'null'}" DHWPump="${record.dhw_pump || 'null'}"`)
+    // Debug: Show sample of data
+    console.log('=== SAMPLE DATA FOR ENERGY CALCULATION ===')
+    dayData.slice(0, 3).forEach((record, i) => {
+      console.log(`${i + 1}: Time="${record.time}" CollectorTemp=${record.collector_temp} SensorTemp=${record.sensor_temp} SolarStatus="${record.solar_status || 'null'}" DHWPump="${record.dhw_pump || 'null'}" BoilerMod="${record.boiler_modulation || 'null'}"`)
     })
     console.log('=== END SAMPLE ===')
     
-    // Group data by date
-    const dataByDate = new Map<string, any[]>()
+    // Initialize energy calculations
+    let solarEnergyKwh = 0
+    let gasEnergyKwh = 0
+    let solarActiveMinutes = 0
+    let gasActiveMinutes = 0
     
-    allHeatingData.forEach(record => {
-      const date = record.date
-      if (!dataByDate.has(date)) {
-        dataByDate.set(date, [])
-      }
-      dataByDate.get(date)!.push(record)
-    })
+    // Debug counters
+    let solarActiveCount = 0
+    let gasActiveCount = 0
+    let solarPowerCount = 0
+    let gasPowerCount = 0
     
-    console.log(`📅 Processing ${dataByDate.size} unique dates`)
-    console.log('=== DATES FOUND ===')
-    Array.from(dataByDate.keys()).forEach(date => {
-      console.log(`Date: "${date}" - Records: ${dataByDate.get(date)?.length}`)
-    })
-    console.log('=== END DATES ===')
+    // Temperature and pressure calculations
+    const collectorTemps = dayData.map(d => Number(d.collector_temp) || 0).filter(t => t > 0)
+    const dhwTemps = dayData.map(d => Number(d.dhw_temp_top) || 0).filter(t => t > 0)
+    const outsideTemps = dayData.map(d => Number(d.outside_temp) || 0).filter(t => t !== 0)
+    const waterPressures = dayData.map(d => Number(d.water_pressure) || 0).filter(p => p > 0)
     
-    // Get existing calculations to avoid duplicates
-    const { data: existingCalculations, error: calcError } = await supabaseClient
-      .from('energy_calculations')
-      .select('date')
+    const avgCollectorTemp = collectorTemps.length > 0 ? 
+      collectorTemps.reduce((sum, t) => sum + t, 0) / collectorTemps.length : 0
+    const avgDhwTemp = dhwTemps.length > 0 ? 
+      dhwTemps.reduce((sum, t) => sum + t, 0) / dhwTemps.length : 0
+    const avgOutsideTemp = outsideTemps.length > 0 ? 
+      outsideTemps.reduce((sum, t) => sum + t, 0) / outsideTemps.length : 0
+    const avgWaterPressure = waterPressures.length > 0 ? 
+      waterPressures.reduce((sum, p) => sum + p, 0) / waterPressures.length : 0
     
-    if (calcError) {
-      console.error('❌ Error fetching existing calculations:', calcError)
-      throw calcError
-    }
+    const maxCollectorTemp = collectorTemps.length > 0 ? Math.max(...collectorTemps) : 0
+    const maxDhwTemp = dhwTemps.length > 0 ? Math.max(...dhwTemps) : 0
+    const minOutsideTemp = outsideTemps.length > 0 ? Math.min(...outsideTemps) : 0
+    const maxOutsideTemp = outsideTemps.length > 0 ? Math.max(...outsideTemps) : 0
     
-    const existingDates = new Set(existingCalculations?.map(calc => calc.date) || [])
-    console.log(`📊 Found ${existingDates.size} existing energy calculations`)
+    // Calculate energy for each data point (1-minute intervals)
+    const intervalMinutes = 1
+    const intervalHours = intervalMinutes / 60 // 1/60 = 0.0167 hours
     
-    let newCalculationsCount = 0
-    let processedCount = 0
-    
-    // Calculate energy for each date
-    for (const [date, dayData] of dataByDate) {
-      processedCount++
-      
-      // Show progress every 5 dates
-      if (processedCount % 5 === 0 || processedCount === dataByDate.size) {
-        console.log(`📊 Progress: ${processedCount}/${dataByDate.size} dates processed`)
-      }
-      
-      // Convert DD.MM.YYYY to YYYY-MM-DD for database storage
-      let dbDate = date
-      if (date.includes('.')) {
-        const [day, month, year] = date.split('.')
-        if (year && month && day && year.length === 4 && month.length <= 2 && day.length <= 2) {
-          dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-        } else {
-          console.log(`⚠️ Invalid date parts for "${date}": day="${day}", month="${month}", year="${year}"`)
-          continue
-        }
-      }
-      
-      // Skip if calculation already exists for this date
-      if (existingDates.has(dbDate)) {
-        console.log(`⏭️ Skipping ${date} (${dbDate}) - calculation already exists`)
-        continue
-      }
-      
-      console.log(`📊 Calculating energy for ${date} (${dayData.length} data points)`)
-      
+    dayData.forEach((record, index) => {
       try {
-        // Sort data by time for proper calculation
-        dayData.sort((a, b) => a.time.localeCompare(b.time))
+        // Solar energy calculation
+        const solarStatus = (record.solar_status || '').toString()
+        const collectorPump = (record.collector_pump || '').toString()
+        const isSolarActive = solarStatus.includes('Charging') || collectorPump === 'On'
         
-        let solarEnergyKwh = 0
-        let gasEnergyKwh = 0
-        let solarActiveMinutes = 0
-        let gasActiveMinutes = 0
-        
-        // Debug counters
-        let solarActiveCount = 0
-        let gasActiveCount = 0
-        let solarPowerCount = 0
-        let gasPowerCount = 0
-        
-        // Temperature and pressure calculations
-        const collectorTemps = dayData.map(d => Number(d.collector_temp) || 0).filter(t => t > 0)
-        const dhwTemps = dayData.map(d => Number(d.dhw_temp_top) || 0).filter(t => t > 0)
-        const outsideTemps = dayData.map(d => Number(d.outside_temp) || 0).filter(t => t !== 0)
-        const waterPressures = dayData.map(d => Number(d.water_pressure) || 0).filter(p => p > 0)
-        
-        const avgCollectorTemp = collectorTemps.length > 0 ? 
-          collectorTemps.reduce((sum, t) => sum + t, 0) / collectorTemps.length : 0
-        const avgDhwTemp = dhwTemps.length > 0 ? 
-          dhwTemps.reduce((sum, t) => sum + t, 0) / dhwTemps.length : 0
-        const avgOutsideTemp = outsideTemps.length > 0 ? 
-          outsideTemps.reduce((sum, t) => sum + t, 0) / outsideTemps.length : 0
-        const avgWaterPressure = waterPressures.length > 0 ? 
-          waterPressures.reduce((sum, p) => sum + p, 0) / waterPressures.length : 0
-        
-        const maxCollectorTemp = collectorTemps.length > 0 ? Math.max(...collectorTemps) : 0
-        const maxDhwTemp = dhwTemps.length > 0 ? Math.max(...dhwTemps) : 0
-        const minOutsideTemp = outsideTemps.length > 0 ? Math.min(...outsideTemps) : 0
-        const maxOutsideTemp = outsideTemps.length > 0 ? Math.max(...outsideTemps) : 0
-        
-        // Calculate energy for each data point (1-minute intervals)
-        const intervalMinutes = 1
-        const intervalHours = intervalMinutes / 60 // 1/60 = 0.0167 hours
-        
-        dayData.forEach((record, index) => {
-          try {
-            // Solar energy calculation
-            const solarStatus = record.solar_status || ''
-            const collectorPump = record.collector_pump || ''
-            const isSolarActive = solarStatus.includes('Charging') || collectorPump === 'On'
-            
-            if (isSolarActive) {
-              solarActiveCount++
-              solarActiveMinutes += intervalMinutes
-              const collectorTemp = Number(record.collector_temp) || 0
-              const sensorTemp = Number(record.sensor_temp) || 0
-              const tempDiff = collectorTemp - sensorTemp
-              if (tempDiff > 0) {
-                // Solar power calculation: flow_rate (5.5 L/min) × specific_heat (4.18 kJ/kg·K) × temp_diff (K) / 60
-                const solarPowerKw = (5.5 * 4.18 * tempDiff) / 60
-                if (solarPowerKw > 0) {
-                  solarPowerCount++
-                  // Energy (kWh) = Power (kW) × Time (hours)
-                  solarEnergyKwh += solarPowerKw * intervalHours
-                }
-              }
+        if (isSolarActive) {
+          solarActiveCount++
+          solarActiveMinutes += intervalMinutes
+          const collectorTemp = Number(record.collector_temp) || 0
+          const sensorTemp = Number(record.sensor_temp) || 0
+          const tempDiff = collectorTemp - sensorTemp
+          if (tempDiff > 0) {
+            // Solar power calculation: flow_rate (5.5 L/min) × specific_heat (4.18 kJ/kg·K) × temp_diff (K) / 60
+            const solarPowerKw = (5.5 * 4.18 * tempDiff) / 60
+            if (solarPowerKw > 0) {
+              solarPowerCount++
+              // Energy (kWh) = Power (kW) × Time (hours)
+              solarEnergyKwh += solarPowerKw * intervalHours
             }
-            
-            // Gas energy calculation
-            const dhwPump = record.dhw_pump || ''
-            const isGasActive = dhwPump === 'On'
-            
-            if (isGasActive) {
-              gasActiveCount++
-              gasActiveMinutes += intervalMinutes
-              const boilerModulation = record.boiler_modulation || ''
-              if (boilerModulation && boilerModulation !== '----') {
-                const modulationStr = boilerModulation.replace('%', '').trim()
-                const modulation = Number(modulationStr)
-                if (!isNaN(modulation) && modulation > 0) {
-                  // Gas power calculation: 10 kW × modulation percentage
-                  const gasPowerKw = 10 * (modulation / 100)
-                  if (gasPowerKw > 0) {
-                    gasPowerCount++
-                    // Energy (kWh) = Power (kW) × Time (hours)
-                    gasEnergyKwh += gasPowerKw * intervalHours
-                  }
-                }
-              }
-            }
-          } catch (recordError) {
-            console.log(`⚠️ Error processing record ${index} for ${date}:`, recordError)
-          }
-        })
-        
-        const totalEnergyKwh = solarEnergyKwh + gasEnergyKwh
-        
-        console.log(`=== ENERGY CALCULATION DEBUG FOR ${date} ===`)
-        console.log(`Total data points: ${dayData.length}`)
-        console.log(`Solar active count: ${solarActiveCount}`)
-        console.log(`Solar power count: ${solarPowerCount}`)
-        console.log(`Gas active count: ${gasActiveCount}`)
-        console.log(`Gas power count: ${gasPowerCount}`)
-        console.log(`Solar energy: ${solarEnergyKwh.toFixed(3)} kWh`)
-        console.log(`Gas energy: ${gasEnergyKwh.toFixed(3)} kWh`)
-        console.log(`Total energy: ${totalEnergyKwh.toFixed(3)} kWh`)
-        console.log('=== END DEBUG ===')
-        
-        // Only create energy record if we have meaningful data
-        if (dayData.length > 0) {
-          const energyRecord = {
-            date: dbDate,
-            solar_energy_kwh: Number(solarEnergyKwh.toFixed(3)),
-            gas_energy_kwh: Number(gasEnergyKwh.toFixed(3)),
-            total_energy_kwh: Number(totalEnergyKwh.toFixed(3)),
-            solar_active_minutes: solarActiveMinutes,
-            gas_active_minutes: gasActiveMinutes,
-            avg_collector_temp: Number(avgCollectorTemp.toFixed(1)),
-            avg_dhw_temp: Number(avgDhwTemp.toFixed(1)),
-            avg_outside_temp: Number(avgOutsideTemp.toFixed(1)),
-            max_collector_temp: Number(maxCollectorTemp.toFixed(1)),
-            max_dhw_temp: Number(maxDhwTemp.toFixed(1)),
-            min_outside_temp: Number(minOutsideTemp.toFixed(1)),
-            max_outside_temp: Number(maxOutsideTemp.toFixed(1)),
-            avg_water_pressure: Number(avgWaterPressure.toFixed(2)),
-            data_points_count: dayData.length
-          }
-          
-          console.log(`💾 Storing energy data for ${date}:`, {
-            solar: `${energyRecord.solar_energy_kwh} kWh`,
-            gas: `${energyRecord.gas_energy_kwh} kWh`,
-            total: `${energyRecord.total_energy_kwh} kWh`,
-            solarActive: `${solarActiveMinutes} min`,
-            gasActive: `${gasActiveMinutes} min`,
-            dataPoints: dayData.length
-          })
-          
-          // Insert energy calculation
-          const { data: insertedData, error: energyError } = await supabaseClient
-            .from('energy_calculations')
-            .insert(energyRecord)
-            .select('id')
-          
-          if (energyError) {
-            if (energyError.code === '23505') {
-              console.log(`⚠️ Energy calculation for ${date} already exists, skipping`)
-            } else {
-              console.error(`❌ Error storing energy data for ${date}:`, energyError)
-              console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
-            }
-          } else {
-            console.log(`✅ Successfully stored energy data for ${date}`)
-            newCalculationsCount++
           }
         }
         
-      } catch (dateError) {
-        console.error(`❌ Error processing date ${date}:`, dateError)
-        // Continue with next date
+        // Gas energy calculation
+        const dhwPump = (record.dhw_pump || '').toString()
+        const isGasActive = dhwPump === 'On'
+        
+        if (isGasActive) {
+          gasActiveCount++
+          gasActiveMinutes += intervalMinutes
+          const boilerModulation = (record.boiler_modulation || '').toString()
+          if (boilerModulation && boilerModulation !== '----') {
+            const modulationStr = boilerModulation.replace('%', '').trim()
+            const modulation = Number(modulationStr)
+            if (!isNaN(modulation) && modulation > 0) {
+              // Gas power calculation: 10 kW × modulation percentage
+              const gasPowerKw = 10 * (modulation / 100)
+              if (gasPowerKw > 0) {
+                gasPowerCount++
+                // Energy (kWh) = Power (kW) × Time (hours)
+                gasEnergyKwh += gasPowerKw * intervalHours
+              }
+            }
+          }
+        }
+      } catch (recordError) {
+        console.log(`⚠️ Error processing record ${index} for ${csvDate}:`, recordError)
       }
+    })
+    
+    const totalEnergyKwh = solarEnergyKwh + gasEnergyKwh
+    
+    console.log(`=== ENERGY CALCULATION RESULTS FOR ${csvDate} ===`)
+    console.log(`Total data points: ${dayData.length}`)
+    console.log(`Solar active count: ${solarActiveCount}`)
+    console.log(`Solar power count: ${solarPowerCount}`)
+    console.log(`Gas active count: ${gasActiveCount}`)
+    console.log(`Gas power count: ${gasPowerCount}`)
+    console.log(`Solar energy: ${solarEnergyKwh.toFixed(3)} kWh`)
+    console.log(`Gas energy: ${gasEnergyKwh.toFixed(3)} kWh`)
+    console.log(`Total energy: ${totalEnergyKwh.toFixed(3)} kWh`)
+    console.log('=== END CALCULATION RESULTS ===')
+    
+    // Create energy record
+    const energyRecord = {
+      date: dbDate,
+      solar_energy_kwh: Number(solarEnergyKwh.toFixed(3)),
+      gas_energy_kwh: Number(gasEnergyKwh.toFixed(3)),
+      total_energy_kwh: Number(totalEnergyKwh.toFixed(3)),
+      solar_active_minutes: solarActiveMinutes,
+      gas_active_minutes: gasActiveMinutes,
+      avg_collector_temp: Number(avgCollectorTemp.toFixed(1)),
+      avg_dhw_temp: Number(avgDhwTemp.toFixed(1)),
+      avg_outside_temp: Number(avgOutsideTemp.toFixed(1)),
+      max_collector_temp: Number(maxCollectorTemp.toFixed(1)),
+      max_dhw_temp: Number(maxDhwTemp.toFixed(1)),
+      min_outside_temp: Number(minOutsideTemp.toFixed(1)),
+      max_outside_temp: Number(maxOutsideTemp.toFixed(1)),
+      avg_water_pressure: Number(avgWaterPressure.toFixed(2)),
+      data_points_count: dayData.length
     }
     
-    console.log(`✅ Daily energy calculations completed - ${newCalculationsCount} new calculations created`)
+    console.log(`💾 Storing energy data for ${csvDate}:`, {
+      solar: `${energyRecord.solar_energy_kwh} kWh`,
+      gas: `${energyRecord.gas_energy_kwh} kWh`,
+      total: `${energyRecord.total_energy_kwh} kWh`,
+      solarActive: `${solarActiveMinutes} min`,
+      gasActive: `${gasActiveMinutes} min`,
+      dataPoints: dayData.length
+    })
+    
+    // Insert energy calculation
+    const { data: insertedData, error: energyError } = await supabaseClient
+      .from('energy_calculations')
+      .insert(energyRecord)
+      .select('id')
+    
+    if (energyError) {
+      if (energyError.code === '23505') {
+        console.log(`⚠️ Energy calculation for ${csvDate} already exists, skipping`)
+      } else {
+        console.error(`❌ Error storing energy data for ${csvDate}:`, energyError)
+        console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
+        throw energyError
+      }
+    } else {
+      console.log(`✅ Successfully stored energy data for ${csvDate}`)
+    }
     
   } catch (error) {
-    console.error('❌ Error in daily energy calculations:', error)
-    // Don't throw error to avoid breaking the main import process
+    console.error(`❌ Error calculating energy for CSV file ${filename}:`, error)
+    throw error
   }
 }
