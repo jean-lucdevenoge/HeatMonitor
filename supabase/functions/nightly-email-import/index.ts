@@ -650,6 +650,12 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     let solarPowerCount = 0
     let gasPowerCount = 0
     
+    // Debug counters
+    let solarActiveCount = 0
+    let gasActiveCount = 0
+    let solarPowerCount = 0
+    let gasPowerCount = 0
+    
     // Temperature and pressure calculations
     const collectorTemps = dayData.map(d => Number(d.collector_temp) || 0).filter(t => t > 0)
     const dhwTemps = dayData.map(d => Number(d.dhw_temp_top) || 0).filter(t => t > 0)
@@ -677,35 +683,65 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     dayData.forEach((record, index) => {
       try {
         // Solar energy calculation
-        const solarStatus = (record.solar_status || '').toString()
-        const collectorPump = (record.collector_pump || '').toString()
+        const solarStatus = String(record.solar_status || '')
+        const collectorPump = String(record.collector_pump || '')
         const isSolarActive = solarStatus.includes('Charging') || collectorPump === 'On'
         
+        // Debug first few records
+        if (index < 5) {
+          console.log(`Record ${index}: SolarStatus="${solarStatus}" CollectorPump="${collectorPump}" IsSolarActive=${isSolarActive}`)
+        }
+        
         if (isSolarActive) {
+          solarActiveCount++
           solarActiveCount++
           solarActiveMinutes += intervalMinutes
           const collectorTemp = Number(record.collector_temp) || 0
           const sensorTemp = Number(record.sensor_temp) || 0
           const tempDiff = collectorTemp - sensorTemp
+          
+          // Debug first few solar active records
+          if (solarActiveCount <= 5) {
+            console.log(`Solar Active ${solarActiveCount}: CollectorTemp=${collectorTemp} SensorTemp=${sensorTemp} TempDiff=${tempDiff}`)
+          }
+          
           if (tempDiff > 0) {
             // Solar power calculation: flow_rate (5.5 L/min) × specific_heat (4.18 kJ/kg·K) × temp_diff (K) / 60
             const solarPowerKw = (5.5 * 4.18 * tempDiff) / 60
             if (solarPowerKw > 0) {
               solarPowerCount++
+              solarPowerCount++
               // Energy (kWh) = Power (kW) × Time (hours)
               solarEnergyKwh += solarPowerKw * intervalHours
+              
+              // Debug first few power calculations
+              if (solarPowerCount <= 5) {
+                console.log(`Solar Power ${solarPowerCount}: ${solarPowerKw.toFixed(3)} kW, Energy += ${(solarPowerKw * intervalHours).toFixed(6)} kWh`)
+              }
             }
           }
         }
         
         // Gas energy calculation
-        const dhwPump = (record.dhw_pump || '').toString()
+        const dhwPump = String(record.dhw_pump || '')
         const isGasActive = dhwPump === 'On'
+        
+        // Debug first few records
+        if (index < 5) {
+          console.log(`Record ${index}: DHWPump="${dhwPump}" IsGasActive=${isGasActive}`)
+        }
         
         if (isGasActive) {
           gasActiveCount++
+          gasActiveCount++
           gasActiveMinutes += intervalMinutes
-          const boilerModulation = (record.boiler_modulation || '').toString()
+          const boilerModulation = String(record.boiler_modulation || '')
+          
+          // Debug first few gas active records
+          if (gasActiveCount <= 5) {
+            console.log(`Gas Active ${gasActiveCount}: BoilerModulation="${boilerModulation}"`)
+          }
+          
           if (boilerModulation && boilerModulation !== '----') {
             const modulationStr = boilerModulation.replace('%', '').trim()
             const modulation = Number(modulationStr)
@@ -714,8 +750,14 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
               const gasPowerKw = 10 * (modulation / 100)
               if (gasPowerKw > 0) {
                 gasPowerCount++
+                gasPowerCount++
                 // Energy (kWh) = Power (kW) × Time (hours)
                 gasEnergyKwh += gasPowerKw * intervalHours
+                
+                // Debug first few power calculations
+                if (gasPowerCount <= 5) {
+                  console.log(`Gas Power ${gasPowerCount}: Modulation=${modulation}%, Power=${gasPowerKw.toFixed(3)} kW, Energy += ${(gasPowerKw * intervalHours).toFixed(6)} kWh`)
+                }
               }
             }
           }
@@ -728,6 +770,15 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     const totalEnergyKwh = solarEnergyKwh + gasEnergyKwh
     
     console.log(`=== ENERGY CALCULATION RESULTS FOR ${csvDate} ===`)
+    console.log(`Total data points: ${dayData.length}`)
+    console.log(`Solar active count: ${solarActiveCount}`)
+    console.log(`Solar power count: ${solarPowerCount}`)
+    console.log(`Gas active count: ${gasActiveCount}`)
+    console.log(`Gas power count: ${gasPowerCount}`)
+    console.log(`Solar energy: ${solarEnergyKwh.toFixed(3)} kWh`)
+    console.log(`Gas energy: ${gasEnergyKwh.toFixed(3)} kWh`)
+    console.log(`Total energy: ${totalEnergyKwh.toFixed(3)} kWh`)
+    console.log('=== END CALCULATION RESULTS ===')
     console.log(`Total data points: ${dayData.length}`)
     console.log(`Solar active count: ${solarActiveCount}`)
     console.log(`Solar power count: ${solarPowerCount}`)
@@ -766,6 +817,15 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
       dataPoints: dayData.length
     })
     
+    console.log(`💾 Storing energy data for ${csvDate}:`, {
+      solar: `${energyRecord.solar_energy_kwh} kWh`,
+      gas: `${energyRecord.gas_energy_kwh} kWh`,
+      total: `${energyRecord.total_energy_kwh} kWh`,
+      solarActive: `${solarActiveMinutes} min`,
+      gasActive: `${gasActiveMinutes} min`,
+      dataPoints: dayData.length
+    })
+    
     // Insert energy calculation
     const { data: insertedData, error: energyError } = await supabaseClient
       .from('energy_calculations')
@@ -777,6 +837,7 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
         console.log(`⚠️ Energy calculation for ${csvDate} already exists, skipping`)
       } else {
         console.error(`❌ Error storing energy data for ${csvDate}:`, energyError)
+        console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
         console.error('Energy record that failed:', JSON.stringify(energyRecord, null, 2))
         throw energyError
       }
