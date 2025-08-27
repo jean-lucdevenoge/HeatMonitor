@@ -593,7 +593,8 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     const dbDate = `${year}-${month}-${day}` // For energy_calculations table
     const csvDate = `${day}.${month}.${year}` // For heating_data table (DD.MM.YYYY format)
     
-    console.log(`🔍 Looking for data on date: ${csvDate} (DB format: ${dbDate})`)
+    console.log(`🔍 Date conversion: ${yyyymmdd} -> CSV format: ${csvDate}, DB format: ${dbDate}`)
+    console.log(`🔍 Looking for heating data on date: ${csvDate}`)
     
     // Check if energy calculation already exists for this date
     const { data: existingCalc, error: existingError } = await supabaseClient
@@ -625,11 +626,25 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
     }
     
     if (!dayData || dayData.length === 0) {
-      console.log(`ℹ️ No heating data found for date ${csvDate}`)
+      console.log(`❌ No heating data found for date ${csvDate}`)
+      console.log(`🔍 Let's check what dates are actually in the database...`)
+      
+      // Debug: Check what dates are available
+      const { data: availableDates, error: datesError } = await supabaseClient
+        .from('heating_data')
+        .select('date')
+        .order('date')
+        .limit(10)
+      
+      if (!datesError && availableDates) {
+        console.log(`📅 Available dates in database:`, availableDates.map(d => d.date))
+      }
+      
       return
     }
     
     console.log(`📊 Found ${dayData.length} data points for ${csvDate}`)
+    console.log(`📅 Date range in data: ${dayData[0]?.date} ${dayData[0]?.time} to ${dayData[dayData.length-1]?.date} ${dayData[dayData.length-1]?.time}`)
     
     // Debug: Show sample of data
     console.log('=== SAMPLE DATA FOR ENERGY CALCULATION ===')
