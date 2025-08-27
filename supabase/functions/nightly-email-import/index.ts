@@ -575,19 +575,23 @@ async function calculateEnergyForCsvFile(supabaseClient: any, filename: string) 
   try {
     console.log(`🔋 Starting energy calculation for CSV file: ${filename}`)
     
-    // Extract date from filename (e.g., "data_26.08.2024.csv" -> "26.08.2024")
-    const dateMatch = filename.match(/(\d{2}\.\d{2}\.\d{4})/)
+    // Extract date from filename (e.g., "trend_data_1_20250826" -> "20250826")
+    const dateMatch = filename.match(/(\d{8})/)
     if (!dateMatch) {
-      console.log(`⚠️ Could not extract date from filename: ${filename}`)
+      console.log(`⚠️ Could not extract YYYYMMDD date from filename: ${filename}`)
       return
     }
     
-    const csvDate = dateMatch[1] // DD.MM.YYYY format
-    console.log(`📅 Extracted date from filename: ${csvDate}`)
+    const yyyymmdd = dateMatch[1] // YYYYMMDD format
+    console.log(`📅 Extracted YYYYMMDD date from filename: ${yyyymmdd}`)
     
-    // Convert DD.MM.YYYY to YYYY-MM-DD for database queries
-    const [day, month, year] = csvDate.split('.')
-    const dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    // Convert YYYYMMDD to YYYY-MM-DD for database queries and DD.MM.YYYY for heating_data table
+    const year = yyyymmdd.substring(0, 4)
+    const month = yyyymmdd.substring(4, 6)
+    const day = yyyymmdd.substring(6, 8)
+    
+    const dbDate = `${year}-${month}-${day}` // For energy_calculations table
+    const csvDate = `${day}.${month}.${year}` // For heating_data table (DD.MM.YYYY format)
     
     console.log(`🔍 Looking for data on date: ${csvDate} (DB format: ${dbDate})`)
     
