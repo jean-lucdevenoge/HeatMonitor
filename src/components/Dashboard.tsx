@@ -24,12 +24,13 @@ export const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load data only once when component mounts
+  // Load data only when user explicitly requests it
   useEffect(() => {
-    if (!heatingDataLoaded) {
+    // Only auto-load if we have no data and haven't loaded before
+    if (!heatingDataLoaded && heatingData.length === 0 && !isLoading) {
       loadHeatingData();
     }
-  }, []); // Empty dependency array - load only once on mount
+  }, []); // Empty dependency - runs only once on mount
 
   const loadHeatingData = async () => {
     setIsLoading(true);
