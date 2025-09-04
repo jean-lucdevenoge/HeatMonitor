@@ -1,8 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { HeatingDataPoint, SystemMetrics } from '../types/HeatingData';
-import { HeatingDataService } from '../services/heatingDataService';
-import { EnergyCalculationsService } from '../services/energyCalculationsService';
-import { calculateMetrics } from '../utils/csvParser';
 
 interface EnergyCalculation {
   id: string;
@@ -26,27 +23,23 @@ interface EnergyCalculation {
 }
 
 interface DataContextType {
-  // Heating data
+  // Heating data cache
   heatingData: HeatingDataPoint[];
   metrics: SystemMetrics | null;
   dataCount: number;
   lastUpdated: string | null;
+  heatingDataLoaded: boolean;
   
-  // Energy calculations
+  // Energy calculations cache
   energyData: EnergyCalculation[];
+  energyDataLoaded: boolean;
   
-  // Loading states
-  isLoadingHeatingData: boolean;
-  isLoadingEnergyData: boolean;
+  // Cache setters
+  setHeatingDataCache: (data: HeatingDataPoint[], metrics: SystemMetrics | null, count: number) => void;
+  setEnergyDataCache: (data: EnergyCalculation[]) => void;
   
-  // Error states
-  heatingDataError: string | null;
-  energyDataError: string | null;
-  
-  // Methods
-  refreshHeatingData: () => Promise<void>;
-  refreshEnergyData: () => Promise<void>;
-  refreshAllData: () => Promise<void>;
+  // Cache status
+  clearCache: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -64,103 +57,58 @@ interface DataProviderProps {
 }
 
 export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
-  // Heating data state
+  // Heating data cache
   const [heatingData, setHeatingData] = useState<HeatingDataPoint[]>([]);
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [dataCount, setDataCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [isLoadingHeatingData, setIsLoadingHeatingData] = useState(true);
-  const [heatingDataError, setHeatingDataError] = useState<string | null>(null);
+  const [heatingDataLoaded, setHeatingDataLoaded] = useState(false);
   
-  // Energy data state
+  // Energy data cache
   const [energyData, setEnergyData] = useState<EnergyCalculation[]>([]);
-  const [isLoadingEnergyData, setIsLoadingEnergyData] = useState(true);
-  const [energyDataError, setEnergyDataError] = useState<string | null>(null);
+  const [energyDataLoaded, setEnergyDataLoaded] = useState(false);
 
-  // Load heating data
-  const refreshHeatingData = async () => {
-    setIsLoadingHeatingData(true);
-    setHeatingDataError(null);
-    try {
-      console.log('Loading heating data from database...');
-      const data = await HeatingDataService.getAllData();
-      const count = await HeatingDataService.getDataCount();
-      
-      if (data.length > 0) {
-        const calculatedMetrics = calculateMetrics(data);
-        setHeatingData(data);
-        setMetrics(calculatedMetrics);
-        setDataCount(count);
-        setLastUpdated(new Date().toLocaleString());
-        
-        console.log('Heating data loaded successfully:', {
-          totalPoints: data.length,
-          firstDate: data[0]?.date,
-          lastDate: data[data.length - 1]?.date,
-        });
-      } else {
-        setHeatingData([]);
-        setMetrics(null);
-        setDataCount(0);
-      }
-    } catch (error) {
-      console.error('Error loading heating data:', error);
-      setHeatingDataError('Failed to load heating data');
-    } finally {
-      setIsLoadingHeatingData(false);
-    }
+  const setHeatingDataCache = (data: HeatingDataPoint[], calculatedMetrics: SystemMetrics | null, count: number) => {
+    setHeatingData(data);
+    setMetrics(calculatedMetrics);
+    setDataCount(count);
+    setLastUpdated(new Date().toLocaleString());
+    setHeatingDataLoaded(true);
   };
 
-  // Load energy calculations
-  const refreshEnergyData = async () => {
-    setIsLoadingEnergyData(true);
-    setEnergyDataError(null);
-    try {
-      console.log('Loading energy calculations from database...');
-      const data = await EnergyCalculationsService.getAllCalculations();
-      setEnergyData(data);
-      console.log('Energy calculations loaded successfully:', data.length, 'records');
-    } catch (error) {
-      console.error('Error loading energy calculations:', error);
-      setEnergyDataError('Failed to load energy calculations');
-    } finally {
-      setIsLoadingEnergyData(false);
-    }
+  const setEnergyDataCache = (data: EnergyCalculation[]) => {
+    setEnergyData(data);
+    setEnergyDataLoaded(true);
   };
 
-  // Refresh all data
-  const refreshAllData = async () => {
-    await Promise.all([refreshHeatingData(), refreshEnergyData()]);
+  const clearCache = () => {
+    setHeatingData([]);
+    setMetrics(null);
+    setDataCount(0);
+    setLastUpdated(null);
+    setHeatingDataLoaded(false);
+    setEnergyData([]);
+    setEnergyDataLoaded(false);
   };
-
-  // Load data on mount
-  useEffect(() => {
-    console.log('DataProvider: Initial data load');
-    refreshAllData();
-  }, []);
 
   const value: DataContextType = {
-    // Heating data
+    // Heating data cache
     heatingData,
     metrics,
     dataCount,
     lastUpdated,
+    heatingDataLoaded,
     
-    // Energy calculations
+    // Energy calculations cache
     energyData,
+    energyDataLoaded,
     
-    // Loading states
-    isLoadingHeatingData,
-    isLoadingEnergyData,
+    // Cache setters
+    setHeatingDataCache,
+    setEnergyDataCache,
     
-    // Error states
-    heatingDataError,
-    energyDataError,
-    
-    // Methods
-    refreshHeatingData,
-    refreshEnergyData,
-    refreshAllData,
+    // Cache management
+    clearCache,
   };
 
   return (

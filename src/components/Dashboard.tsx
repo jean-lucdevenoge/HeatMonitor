@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MetricsCards } from './MetricsCards';
 import { SolarActivityChart } from './SolarActivityChart';
 import { EnergyChart } from './EnergyChart';
@@ -7,6 +7,8 @@ import { CombinedPowerChart } from './CombinedPowerChart';
 import { Calendar, AlertCircle, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useData } from '../contexts/DataContext';
+import { HeatingDataService } from '../services/heatingDataService';
+import { calculateMetrics } from '../utils/csvParser';
 
 export const Dashboard: React.FC = () => {
   const { t } = useLanguage();
@@ -15,10 +17,51 @@ export const Dashboard: React.FC = () => {
     metrics,
     dataCount,
     lastUpdated,
-    isLoadingHeatingData: isLoading,
-    heatingDataError,
-    refreshHeatingData
+    heatingDataLoaded,
+    setHeatingDataCache
   } = useData();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load data only if not already loaded
+  useEffect(() => {
+    if (!heatingDataLoaded) {
+      loadHeatingData();
+    }
+  }, [heatingDataLoaded]);
+
+  const loadHeatingData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log('Loading heating data from database...');
+      const data = await HeatingDataService.getAllData();
+      const count = await HeatingDataService.getDataCount();
+      
+      if (data.length > 0) {
+        const calculatedMetrics = calculateMetrics(data);
+        setHeatingDataCache(data, calculatedMetrics, count);
+        
+        console.log('Heating data loaded successfully:', {
+          totalPoints: data.length,
+          firstDate: data[0]?.date,
+          lastDate: data[data.length - 1]?.date,
+        });
+      } else {
+        setHeatingDataCache([], null, 0);
+      }
+    } catch (err) {
+      console.error('Error loading heating data:', err);
+      setError('Failed to load heating data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    loadHeatingData();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -40,8 +83,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* File Upload */}
-        {heatingData.length === 0 && !isLoading && !heatingDataError && (
+        {/* No Data State */}
+        {heatingData.length === 0 && !isLoading && !error && (
           <div className="mb-8">
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -52,14 +95,14 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Error State */}
-        {heatingDataError && (
+        {error && (
           <div className="mb-8">
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">Error Loading Data</h3>
-              <p className="text-gray-500 mb-4">{heatingDataError}</p>
+              <p className="text-gray-500 mb-4">{error}</p>
               <button
-                onClick={refreshHeatingData}
+                onClick={handleRetry}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
               >
                 Retry
@@ -113,7 +156,7 @@ export const Dashboard: React.FC = () => {
               <CombinedPowerChart data={heatingData} />
             </div>
           </div>
-        ) : !isLoading && !heatingDataError && (
+        ) : !isLoading && !error && (
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
