@@ -1,119 +1,124 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { HeatingDataPoint, SystemMetrics } from '../types/HeatingData';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from 'react';
+import { HeatingDataService } from '../services/heatingDataService';
+import { calculateMetrics } from '../utils/csvParser';
 
-interface EnergyCalculation {
-  id: string;
+type HeatingPoint = {
   date: string;
-  solar_energy_kwh: number;
-  gas_energy_kwh: number;
-  total_energy_kwh: number;
-  solar_active_minutes: number;
-  gas_active_minutes: number;
-  avg_collector_temp: number;
-  avg_dhw_temp: number;
-  avg_outside_temp: number;
-  max_collector_temp: number;
-  max_dhw_temp: number;
-  min_outside_temp: number;
-  max_outside_temp: number;
-  avg_water_pressure: number;
-  data_points_count: number;
-  created_at: string;
-  updated_at: string;
-}
+  time?: string;
+  // ...your other fields
+};
 
-interface DataContextType {
-  // Heating data cache
-  heatingData: HeatingDataPoint[];
-  metrics: SystemMetrics | null;
+type Metrics = ReturnType<typeof calculateMetrics> | null;
+
+type DataContextValue = {
+  heatingData: HeatingPoint[];
+  metrics: Metrics;
   dataCount: number;
   lastUpdated: string | null;
   heatingDataLoaded: boolean;
-  
-  // Energy calculations cache
-  energyData: EnergyCalculation[];
-  energyDataLoaded: boolean;
-  
-  // Cache setters
-  setHeatingDataCache: (data: HeatingDataPoint[], metrics: SystemMetrics | null, count: number) => void;
-  setEnergyDataCache: (data: EnergyCalculation[]) => void;
-  
-  // Cache status
-  clearCache: () => void;
-}
-
-const DataContext = createContext<DataContextType | undefined>(undefined);
-
-export const useData = () => {
-  const context = useContext(DataContext);
-  if (!context) {
-    throw new Error('useData must be used within a DataProvider');
-  }
-  return context;
+  ensureHeatingData: () => Promise<void>;
+  // keep your existing setter for manual overrides if you use it
+  setHeatingDataCache: (data: HeatingPoint[], metrics: Metrics, count: number) => void;
+  // (optional) expose for special cases
+  setHeatingDataLoaded?: (v: boolean) => void;
 };
 
-interface DataProviderProps {
-  children: ReactNode;
-}
+const DataContext = createContext<DataContextValue | undefined>(undefined);
 
-export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
-  // Heating data cache
-  const [heatingData, setHeatingData] = useState<HeatingDataPoint[]>([]);
-  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [dataCount, setDataCount] = useState(0);
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [heatingData, setHeatingData] = useState<HeatingPoint[]>([]);
+  const [metrics, setMetrics] = useState<Metrics>(null);
+  const [dataCount, setDataCount] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [heatingDataLoaded, setHeatingDataLoaded] = useState(false);
-  
-  // Energy data cache
-  const [energyData, setEnergyData] = useState<EnergyCalculation[]>([]);
-  const [energyDataLoaded, setEnergyDataLoaded] = useState(false);
 
-  const setHeatingDataCache = (data: HeatingDataPoint[], calculatedMetrics: SystemMetrics | null, count: number) => {
-    setHeatingData(data);
-    setMetrics(calculatedMetrics);
-    setDataCount(count);
-    setLastUpdated(new Date().toLocaleString());
-    setHeatingDataLoaded(true);
-  };
+  // Persist "loaded this session" so remounts won't refetch
+  const SESSION_KEY = 'heating_data_loaded_v1';
+  const [heatingDataLoaded, setHeatingDataLoaded] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && window.sessionStorage.getItem(SESSION_KEY) === '1';
+  });
 
-  const setEnergyDataCache = (data: EnergyCalculation[]) => {
-    setEnergyData(data);
-    setEnergyDataLoaded(true);
-  };
+  // in-flight guard across re-renders
+  const loadingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const clearCache = () => {
-    setHeatingData([]);
-    setMetrics(null);
-    setDataCount(0);
-    setLastUpdated(null);
-    setHeatingDataLoaded(false);
-    setEnergyData([]);
-    setEnergyDataLoaded(false);
-  };
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (heatingDataLoaded) {
+        window.sessionStorage.setItem(SESSION_KEY, '1');
+      } else {
+        window.sessionStorage.removeItem(SESSION_KEY);
+      }
+    }
+  }, [heatingDataLoaded]);
 
-  const value: DataContextType = {
-    // Heating data cache
-    heatingData,
-    metrics,
-    dataCount,
-    lastUpdated,
-    heatingDataLoaded,
-    
-    // Energy calculations cache
-    energyData,
-    energyDataLoaded,
-    
-    // Cache setters
-    setHeatingDataCache,
-    setEnergyDataCache,
-    
-    // Cache management
-    clearCache,
-  };
-
-  return (
-    <DataContext.Provider value={value}>
-      {children}
-    </DataContext.Provider>
+  const setHeatingDataCache = useCallback(
+    (data: HeatingPoint[], m: Metrics, count: number) => {
+      setHeatingData(data);
+      setMetrics(m);
+      setDataCount(count);
+      setLastUpdated(new Date().toISOString());
+    },
+    []
   );
+
+  const ensureHeatingData = useCallback(async () => {
+    if (heatingDataLoaded || loadingRef.current) return;
+    loadingRef.current = true;
+
+    // cancel any previous inflight
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const [data, count] = await Promise.all([
+        HeatingDataService.getAllData({ signal: controller.signal }),
+        HeatingDataService.getDataCount({ signal: controller.signal }),
+      ]);
+
+      if (controller.signal.aborted) return;
+
+      if (Array.isArray(data) && data.length > 0) {
+        const m = calculateMetrics(data);
+        setHeatingDataCache(data, m, count ?? data.length);
+      } else {
+        setHeatingDataCache([], null, count ?? 0);
+      }
+
+      setHeatingDataLoaded(true);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+      console.error('ensureHeatingData error:', err);
+      // Do NOT flip loaded true on error; allow caller to retry
+      loadingRef.current = false; // unlock so user can retry
+    }
+  }, [heatingDataLoaded, setHeatingDataCache]);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const value = useMemo<DataContextValue>(
+    () => ({
+      heatingData,
+      metrics,
+      dataCount,
+      lastUpdated,
+      heatingDataLoaded,
+      ensureHeatingData,
+      setHeatingDataCache,
+      setHeatingDataLoaded, // optional exposure
+    }),
+    [heatingData, metrics, dataCount, lastUpdated, heatingDataLoaded, ensureHeatingData, setHeatingDataCache]
+  );
+
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+};
+
+export const useData = () => {
+  const ctx = useContext(DataContext);
+  if (!ctx) throw new Error('useData must be used within a DataProvider');
+  return ctx;
 };
