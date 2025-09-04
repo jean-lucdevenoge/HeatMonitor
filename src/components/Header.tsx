@@ -2,7 +2,6 @@ import React from 'react';
 import { Home, Settings, BarChart3, FileText } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useData } from '../contexts/DataContext';
 
 interface HeaderProps {
   onSectionChange: (section: string) => void;
@@ -11,7 +10,6 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onSectionChange, activeSection }) => {
   const { t } = useLanguage();
-  const { isLoadingHeatingData, isLoadingEnergyData } = useData();
 
   const navItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: Home },
@@ -35,15 +33,6 @@ export const Header: React.FC<HeaderProps> = ({ onSectionChange, activeSection }
           
           <div className="flex items-center space-x-4">
             <LanguageSelector />
-            
-            {/* Loading indicator */}
-            {(isLoadingHeatingData || isLoadingEnergyData) && (
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                <span className="hidden sm:inline">Loading...</span>
-              </div>
-            )}
-            
             <nav className="flex space-x-1">
             {navItems.map((item) => (
               <button
