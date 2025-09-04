@@ -23,12 +23,10 @@ export const Dashboard: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
-  // Load data only once when component mounts and data hasn't been loaded
+  // Load data only once when component mounts
   useEffect(() => {
-    if (!heatingDataLoaded && !hasAttemptedLoad && !isLoading) {
-      setHasAttemptedLoad(true);
+    if (!heatingDataLoaded) {
       loadHeatingData();
     }
   }, []); // Empty dependency array - load only once on mount
@@ -62,7 +60,6 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleRetry = () => {
-    setHasAttemptedLoad(false);
     loadHeatingData();
   };
 
