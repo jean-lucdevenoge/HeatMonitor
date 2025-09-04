@@ -17,7 +17,6 @@ import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useData } from '../contexts/DataContext';
-import { EnergyCalculationsService } from '../services/energyCalculationsService';
 
 ChartJS.register(
   CategoryScale,
@@ -36,41 +35,13 @@ export const AnalyticsDashboard: React.FC = () => {
   const { t } = useLanguage();
   const {
     energyData,
-    energyDataLoaded,
-    setEnergyDataCache
+    isLoadingEnergyData: isLoading,
+    energyDataError: error,
+    refreshEnergyData
   } = useData();
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof EnergyCalculation>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-
-  // Load data only if not already loaded
-  useEffect(() => {
-    if (!energyDataLoaded) {
-      loadEnergyData();
-    }
-  }, [energyDataLoaded]);
-
-  const loadEnergyData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      console.log('Loading energy calculations from database...');
-      const data = await EnergyCalculationsService.getAllCalculations();
-      setEnergyDataCache(data);
-      console.log('Energy calculations loaded successfully:', data.length, 'records');
-    } catch (err) {
-      console.error('Error loading energy calculations:', err);
-      setError('Failed to load energy calculations');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRetry = () => {
-    loadEnergyData();
-  };
 
   // Define EnergyCalculation interface locally since it's used for sorting
   interface EnergyCalculation {
@@ -420,7 +391,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('analytics.errorLoadingData')}</h3>
           <p className="text-gray-500 mb-4">{error}</p>
           <button
-            onClick={handleRetry}
+            onClick={refreshEnergyData}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
             {t('analytics.retry')}
