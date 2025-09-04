@@ -19,38 +19,50 @@ export const Dashboard: React.FC = () => {
     ensureHeatingData,
   } = useData();
 
-  // local UI state only
+  // local UI state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(false);
 
-  // Run exactly once per mount (safe for React 18 StrictMode)
+  // Load once on mount, with timeout protection
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
 
     let cancelled = false;
 
-    (async () => {
-      // Only fetch if we don't have data already
-      if (!heatingDataLoaded && heatingData.length === 0) {
-        try {
-          setIsLoading(true);
-          setError(null);
-          await ensureHeatingData();
-        } catch (e) {
-          console.error(e);
-          if (!cancelled) setError('Failed to load heating data');
-        } finally {
-          if (!cancelled) setIsLoading(false);
+    const loadOnce = async () => {
+      if (heatingDataLoaded || heatingData.length > 0) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        await Promise.race([
+          ensureHeatingData(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 10000)
+          ),
+        ]);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) {
+          const msg =
+            (e as Error)?.message === 'timeout'
+              ? 'Loading took too long. Please try again.'
+              : 'Failed to load heating data';
+          setError(msg);
         }
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-    })();
+    };
+
+    loadOnce();
 
     return () => {
       cancelled = true;
     };
-    // Intentionally empty deps: we want a true "run once" on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -111,7 +123,8 @@ export const Dashboard: React.FC = () => {
                 {t('dashboard.noData')}
               </h3>
               <p className="text-gray-500">
-                Data is automatically imported from email attachments every night at 4 AM European time.
+                Data is automatically imported from email attachments every
+                night at 4 AM European time.
               </p>
             </div>
           </div>
