@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MetricsCards } from './MetricsCards';
 import { SolarActivityChart } from './SolarActivityChart';
 import { EnergyChart } from './EnergyChart';
@@ -18,32 +18,34 @@ export const Dashboard: React.FC = () => {
     dataCount,
     lastUpdated,
     heatingDataLoaded,
-    setHeatingDataCache
+    setHeatingDataCache,
   } = useData();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load data only when user explicitly requests it
-  useEffect(() => {
-    // Only auto-load if we have no data and haven't loaded before
-    if (!heatingDataLoaded && heatingData.length === 0 && !isLoading) {
-      loadHeatingData();
-    }
-  }, []); // Empty dependency - runs only once on mount
+  // Prevent duplicate loads across StrictMode double-mounts, rapid remounts, or manual retries in-flight
+  const hasFetchedRef = useRef(false);
 
-  const loadHeatingData = async () => {
+  const loadHeatingData = useCallback(async () => {
+    // Bail if already fetched once this mount or a load is in-flight
+    if (hasFetchedRef.current || isLoading) return;
+    hasFetchedRef.current = true;
+
     setIsLoading(true);
     setError(null);
+
     try {
       console.log('Loading heating data from database...');
       const data = await HeatingDataService.getAllData();
       const count = await HeatingDataService.getDataCount();
-      
+
       if (data.length > 0) {
         const calculatedMetrics = calculateMetrics(data);
+        // NOTE: keep your original signature. If your context sets heatingDataLoaded internally, great.
+        // Otherwise, the ref prevents duplicates during this session; consider setting heatingDataLoaded in context.
         setHeatingDataCache(data, calculatedMetrics, count);
-        
+
         console.log('Heating data loaded successfully:', {
           totalPoints: data.length,
           firstDate: data[0]?.date,
@@ -55,12 +57,24 @@ export const Dashboard: React.FC = () => {
     } catch (err) {
       console.error('Error loading heating data:', err);
       setError('Failed to load heating data');
+      // Allow retry after an error
+      hasFetchedRef.current = false;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, setHeatingDataCache]);
+
+  useEffect(() => {
+    // Only auto-load if we have no data and haven't loaded before
+    if (!heatingDataLoaded && heatingData.length === 0) {
+      loadHeatingData();
+    }
+    // Intentionally depend on the precise values we care about
+  }, [heatingDataLoaded, heatingData.length, loadHeatingData]);
 
   const handleRetry = () => {
+    // Unlock and try again
+    hasFetchedRef.current = false;
     loadHeatingData();
   };
 
@@ -74,11 +88,13 @@ export const Dashboard: React.FC = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.title')}</h2>
               <p className="text-gray-600">{t('dashboard.subtitle')}</p>
             </div>
-            
+
             {lastUpdated && (
               <div className="mt-4 sm:mt-0 flex items-center space-x-2 text-sm text-gray-500">
                 <Calendar className="w-4 h-4" />
-                <span>{t('dashboard.lastUpdated')}: {lastUpdated}</span>
+                <span>
+                  {t('dashboard.lastUpdated')}: {lastUpdated}
+                </span>
               </div>
             )}
           </div>
@@ -90,7 +106,9 @@ export const Dashboard: React.FC = () => {
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
-              <p className="text-gray-500">Data is automatically imported from email attachments every night at 4 AM European time.</p>
+              <p className="text-gray-500">
+                Data is automatically imported from email attachments every night at 4 AM European time.
+              </p>
             </div>
           </div>
         )}
@@ -129,14 +147,20 @@ export const Dashboard: React.FC = () => {
                   <BarChart3 className="w-6 h-6" />
                   <div>
                     <h3 className="text-lg font-semibold">{t('dashboard.historicalData')}</h3>
-                    <p className="opacity-90">{t('dashboard.analyzingPoints')} {heatingData.length} {t('dashboard.dataPoints')} (DB: {dataCount})</p>
+                    <p className="opacity-90">
+                      {t('dashboard.analyzingPoints')} {heatingData.length} {t('dashboard.dataPoints')} (DB: {dataCount})
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
                   <p className="text-sm opacity-90">{t('dashboard.dataRange')}</p>
                   <p className="font-semibold">
-                    {heatingData.length > 0 ? `${heatingData[0]?.date} ${heatingData[0]?.time} - ${heatingData[heatingData.length - 1]?.date} ${heatingData[heatingData.length - 1]?.time}` : 'No data'}
+                    {heatingData.length > 0
+                      ? `${heatingData[0]?.date} ${heatingData[0]?.time} - ${
+                          heatingData[heatingData.length - 1]?.date
+                        } ${heatingData[heatingData.length - 1]?.time}`
+                      : 'No data'}
                   </p>
                 </div>
               </div>
