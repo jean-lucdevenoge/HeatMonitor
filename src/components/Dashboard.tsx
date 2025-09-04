@@ -1,76 +1,24 @@
 import React, { useState } from 'react';
-import { useEffect } from 'react';
-import { HeatingDataPoint, SystemMetrics } from '../types/HeatingData';
 import { MetricsCards } from './MetricsCards';
-import { TemperatureChart } from './TemperatureChart';
-import { SystemStatus } from './SystemStatus';
-import { EfficiencyChart } from './EfficiencyChart';
-import { PressureChart } from './PressureChart';
 import { SolarActivityChart } from './SolarActivityChart';
 import { EnergyChart } from './EnergyChart';
 import { GasPowerChart } from './GasPowerChart';
 import { CombinedPowerChart } from './CombinedPowerChart';
-import { parseHeatingCSV, calculateMetrics } from '../utils/csvParser';
-import { HeatingDataService } from '../services/heatingDataService';
 import { Calendar, AlertCircle, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useData } from '../contexts/DataContext';
 
 export const Dashboard: React.FC = () => {
   const { t } = useLanguage();
-  const [heatingData, setHeatingData] = useState<HeatingDataPoint[]>([]);
-  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dataCount, setDataCount] = useState(0);
-
-  // Load data from database on component mount
-  useEffect(() => {
-    loadDataFromDatabase();
-  }, []);
-
-  const loadDataFromDatabase = async () => {
-    setIsLoading(true);
-    try {
-      const data = await HeatingDataService.getAllData();
-      const count = await HeatingDataService.getDataCount();
-      
-      if (data.length > 0) {
-        const calculatedMetrics = calculateMetrics(data);
-        setHeatingData(data);
-        setMetrics(calculatedMetrics);
-        setDataCount(count);
-        setLastUpdated(new Date().toLocaleString());
-        
-        // Log data range for debugging
-        console.log('=== DASHBOARD DATA LOADED ===');
-        console.log('Total points:', data.length);
-        console.log('First record:', data[0]);
-        console.log('Last record:', data[data.length - 1]);
-        console.log('Date range display will show:', {
-          start: `${data[0]?.date} ${data[0]?.time}`,
-          end: `${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`
-        });
-        console.log('Raw data sample (first 3):', data.slice(0, 3));
-        console.log('Raw data sample (last 3):', data.slice(-3));
-        console.log('================================');
-        
-        console.log('Data loaded (summary):', {
-          totalPoints: data.length,
-          firstDate: data[0]?.date,
-          firstTime: data[0]?.time,
-          lastDate: data[data.length - 1]?.date,
-          lastTime: data[data.length - 1]?.time,
-          dateRange: `${data[0]?.date} ${data[0]?.time} - ${data[data.length - 1]?.date} ${data[data.length - 1]?.time}`
-        });
-      }
-    } catch (error) {
-      console.error('Error loading data from database:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const latestData = heatingData.length > 0 ? heatingData[heatingData.length - 1] : null;
+  const {
+    heatingData,
+    metrics,
+    dataCount,
+    lastUpdated,
+    isLoadingHeatingData: isLoading,
+    heatingDataError,
+    refreshHeatingData
+  } = useData();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -93,12 +41,29 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* File Upload */}
-        {heatingData.length === 0 && !isLoading && (
+        {heatingData.length === 0 && !isLoading && !heatingDataError && (
           <div className="mb-8">
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
               <p className="text-gray-500">Data is automatically imported from email attachments every night at 4 AM European time.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {heatingDataError && (
+          <div className="mb-8">
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Error Loading Data</h3>
+              <p className="text-gray-500 mb-4">{heatingDataError}</p>
+              <button
+                onClick={refreshHeatingData}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Retry
+              </button>
             </div>
           </div>
         )}
@@ -148,7 +113,7 @@ export const Dashboard: React.FC = () => {
               <CombinedPowerChart data={heatingData} />
             </div>
           </div>
-        ) : !isLoading && (
+        ) : !isLoading && !heatingDataError && (
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
