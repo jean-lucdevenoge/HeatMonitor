@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MetricsCards } from './MetricsCards';
 import { SolarActivityChart } from './SolarActivityChart';
 import { EnergyChart } from './EnergyChart';
@@ -19,63 +19,97 @@ export const Dashboard: React.FC = () => {
     lastUpdated,
     heatingDataLoaded,
     setHeatingDataCache,
+    // If your context exposes this, we'll use it. If not, the optional call below is a no-op.
+    setHeatingDataLoaded,
   } = useData();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Prevent duplicate loads across StrictMode double-mounts, rapid remounts, or manual retries in-flight
+  // Guards to stop repeat fetches across StrictMode double-mounts / remounts
   const hasFetchedRef = useRef(false);
+  const isLoadingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const loadHeatingData = useCallback(async () => {
-    // Bail if already fetched once this mount or a load is in-flight
-    if (hasFetchedRef.current || isLoading) return;
+  // Keep the ref in sync with state
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  const loadHeatingData = async () => {
+    if (hasFetchedRef.current || isLoadingRef.current) return;
     hasFetchedRef.current = true;
+
+    // cancel any prior run
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setIsLoading(true);
     setError(null);
 
     try {
       console.log('Loading heating data from database...');
-      const data = await HeatingDataService.getAllData();
-      const count = await HeatingDataService.getDataCount();
+      const [data, count] = await Promise.all([
+        HeatingDataService.getAllData({ signal: controller.signal }),
+        HeatingDataService.getDataCount({ signal: controller.signal }),
+      ]);
+
+      if (controller.signal.aborted) return;
 
       if (data.length > 0) {
         const calculatedMetrics = calculateMetrics(data);
-        // NOTE: keep your original signature. If your context sets heatingDataLoaded internally, great.
-        // Otherwise, the ref prevents duplicates during this session; consider setting heatingDataLoaded in context.
         setHeatingDataCache(data, calculatedMetrics, count);
-
-        console.log('Heating data loaded successfully:', {
-          totalPoints: data.length,
-          firstDate: data[0]?.date,
-          lastDate: data[data.length - 1]?.date,
-        });
       } else {
         setHeatingDataCache([], null, 0);
       }
-    } catch (err) {
+
+      // Mark as loaded if your context supports it (safe if undefined)
+      try {
+        setHeatingDataLoaded?.(true);
+      } catch {
+        /* ignore if not provided */
+      }
+
+      console.log('Heating data loaded successfully:', {
+        totalPoints: data.length,
+        firstDate: data[0]?.date,
+        lastDate: data[data.length - 1]?.date,
+      });
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
       console.error('Error loading heating data:', err);
       setError('Failed to load heating data');
       // Allow retry after an error
       hasFetchedRef.current = false;
     } finally {
-      setIsLoading(false);
+      if (!abortRef.current?.signal.aborted) {
+        setIsLoading(false);
+      }
     }
-  }, [isLoading, setHeatingDataCache]);
+  };
 
   useEffect(() => {
     // Only auto-load if we have no data and haven't loaded before
     if (!heatingDataLoaded && heatingData.length === 0) {
-      loadHeatingData();
+      void loadHeatingData();
     }
-    // Intentionally depend on the precise values we care about
-  }, [heatingDataLoaded, heatingData.length, loadHeatingData]);
+    // IMPORTANT: empty deps — do NOT include isLoading or loadHeatingData here
+    // to avoid loops when their identities change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const handleRetry = () => {
     // Unlock and try again
     hasFetchedRef.current = false;
-    loadHeatingData();
+    void loadHeatingData();
   };
 
   return (
