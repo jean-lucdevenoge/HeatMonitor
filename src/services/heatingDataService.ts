@@ -56,91 +56,124 @@ export class HeatingDataService {
     };
   }
 
-  // Get all heating data from database
-  static async getAllData(): Promise<HeatingDataPoint[]> {
-    console.log('Fetching all heating data from database...');
+// Get all heating data from database
+static async getAllData(): Promise<HeatingDataPoint[]> {
+  console.log('Fetching all heating data from database...');
+  
+  // Get total count first
+  const { count, error: countError } = await supabase
+    .from('heating_data')
+    .select('*', { count: 'exact', head: true });
+
+  if (countError) {
+    console.error('Error getting count:', countError);
+    throw countError;
+  }
+
+  console.log(`Total records in database: ${count}`);
+
+  // Fetch all data in chunks to avoid limits
+  const allData: HeatingDataRow[] = [];
+  const chunkSize = 1000;
+  let offset = 0;
+
+  while (offset < (count || 0)) {
+    console.log(`Fetching chunk ${offset} to ${offset + chunkSize - 1}`);
     
-    // Get total count first
-    const { count, error: countError } = await supabase
-      .from('heating_data')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) {
-      console.error('Error getting count:', countError);
-      throw countError;
-    }
-
-    console.log(`Total records in database: ${count}`);
-
-    // Fetch all data at once - Supabase can handle large datasets
-    const { data, error } = await supabase
+    const { data: chunkData, error } = await supabase
       .from('heating_data')
       .select('*')
       .order('date')
-      .order('time');
+      .order('time')
+      .range(offset, offset + chunkSize - 1);
 
     if (error) {
-      console.error('Error fetching all data:', error);
+      console.error('Error fetching chunk:', error);
       throw error;
     }
-    if (!data || data.length === 0) {
-      console.log('Total records: 0');
-      return [];
+
+    if (chunkData) {
+      allData.push(...chunkData);
+      console.log(`Fetched ${chunkData.length} records, total so far: ${allData.length}`);
     }
 
-    console.log('RAW DATABASE DATA (first 5):');
-    data.slice(0, 5).forEach((row, i) => {
-      console.log(`${i}: ${row.date} ${row.time}`);
-    });
-    
-    console.log('RAW DATABASE DATA (last 5):');
-    data.slice(-5).forEach((row, i) => {
-      console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
-    });
-    
-    console.log('RAW DATABASE DATA (first 5):');
-    data.slice(0, 5).forEach((row, i) => {
-      console.log(`${i}: ${row.date} ${row.time}`);
-    });
-    
-    console.log('RAW DATABASE DATA (last 5):');
-    data.slice(-5).forEach((row, i) => {
-      console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
-    });
-    // Convert to data points and sort properly by date/time
-    const dataPoints = data.map(this.dbRowToDataPoint);
-    
-    // Sort properly by converting DD.MM.YYYY to comparable format
-    dataPoints.sort((a, b) => {
-      // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-      const dateA = a.date.split('.').reverse().join('-');
-      const dateB = b.date.split('.').reverse().join('-');
-      
-      if (dateA !== dateB) {
-        return dateA.localeCompare(dateB);
-      }
-      
-      // If dates are the same, sort by time
-      return a.time.localeCompare(b.time);
-    });
+    offset += chunkSize;
 
-    console.log('AFTER JAVASCRIPT SORTING (first 5):');
-    dataPoints.slice(0, 5).forEach((point, i) => {
-      console.log(`${i}: ${point.date} ${point.time}`);
-    });
-    
-    console.log('AFTER JAVASCRIPT SORTING (last 5):');
-    dataPoints.slice(-5).forEach((point, i) => {
-      console.log(`${dataPoints.length - 5 + i}: ${point.date} ${point.time}`);
-    });
-    
-    console.log('AFTER JAVASCRIPT SORTING (first 5):');
-    dataPoints.slice(0, 5).forEach((point, i) => {
-      console.log(`${i}: ${point.date} ${point.time}`);
-    });
-    
-    return dataPoints;
+    // Safety break to avoid infinite loop
+    if (offset > 50000) {
+      console.warn('Safety break: stopping at 50,000 records');
+      break;
+    }
   }
+
+  const data = allData;
+
+  if (!data || data.length === 0) {
+    console.log('Total records: 0');
+    return [];
+  }
+
+  console.log('RAW DATABASE DATA (first 5):');
+  data.slice(0, 5).forEach((row, i) => {
+    console.log(`${i}: ${row.date} ${row.time}`);
+  });
+  
+  console.log('RAW DATABASE DATA (last 5):');
+  data.slice(-5).forEach((row, i) => {
+    console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
+  });
+  
+  console.log('RAW DATABASE DATA (first 5):');
+  data.slice(0, 5).forEach((row, i) => {
+    console.log(`${i}: ${row.date} ${row.time}`);
+  });
+  
+  console.log('RAW DATABASE DATA (last 5):');
+  data.slice(-5).forEach((row, i) => {
+    console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
+  });
+  // Convert to data points and sort properly by date/time
+  const dataPoints = data.map(this.dbRowToDataPoint);
+  
+  // Sort properly by converting DD.MM.YYYY to comparable format
+  dataPoints.sort((a, b) => {
+    // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+    const dateA = a.date.split('.').reverse().join('-');
+    const dateB = b.date.split('.').reverse().join('-');
+    
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB);
+    }
+    
+    // If dates are the same, sort by time
+    return a.time.localeCompare(b.time);
+  });
+
+  console.log('AFTER JAVASCRIPT SORTING (first 5):');
+  dataPoints.slice(0, 5).forEach((point, i) => {
+    console.log(`${i}: ${point.date} ${point.time}`);
+  });
+  
+  console.log('AFTER JAVASCRIPT SORTING (last 5):');
+  dataPoints.slice(-5).forEach((point, i) => {
+    console.log(`${dataPoints.length - 5 + i}: ${point.date} ${point.time}`);
+  });
+  
+  console.log('AFTER JAVASCRIPT SORTING (first 5):');
+  dataPoints.slice(0, 5).forEach((point, i) => {
+    console.log(`${i}: ${point.date} ${point.time}`);
+  });
+  
+  console.log('AFTER JAVASCRIPT SORTING (last 5):');
+  dataPoints.slice(-5).forEach((point, i) => {
+    console.log(`${dataPoints.length - 5 + i}: ${point.date} ${point.time}`);
+  });
+  console.log(`Total records: ${dataPoints.length}`);
+  console.log('First record:', dataPoints[0]);
+  console.log('Last record:', dataPoints[dataPoints.length - 1]);
+
+  return dataPoints;
+}
 
   // Insert heating data points into database
   static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
@@ -170,7 +203,7 @@ export class HeatingDataService {
       
       return { inserted, duplicates };
     } catch (error) {
-      console.error('Error in getDataCount:', error);
+      console.error('Error in insertData:', error);
       throw error;
     }
   }
@@ -206,12 +239,35 @@ export class HeatingDataService {
         .select('*', { count: 'exact', head: true });
 
       if (error) {
-        console.error('Error getting count:', error);
+        console.error('Error getting data count:', error);
+        return 0;
+      }
+
+      console.log(`Database reports ${count} total records`);
+      return count || 0;
+    } catch (error) {
+      console.error('Error in getDataCount:', error);
+      return 0;
+    }
+  }
+
+  // Delete all data (for testing purposes)
+  static async deleteAllData(): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('heating_data')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+      if (error) {
+        console.error('Error deleting all data:', error);
         throw error;
       }
 
-      console.log(`Total records in database: ${count}`);
-      return count || 0;
+      console.log('All heating data deleted');
+    } catch (error) {
+      console.error('Error in deleteAllData:', error);
+      throw error;
     }
   }
 }

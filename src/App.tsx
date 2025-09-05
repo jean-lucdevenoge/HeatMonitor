@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { DataProvider } from './contexts/DataContext';
 
 function App() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -38,10 +39,12 @@ function App() {
 
   return (
     <LanguageProvider>
-    <div className="min-h-screen bg-gray-50">
-      <Header onSectionChange={setActiveSection} activeSection={activeSection} />
-      {renderContent()}
-    </div>
+      <DataProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Header onSectionChange={setActiveSection} activeSection={activeSection} />
+          {renderContent()}
+        </div>
+      </DataProvider>
     </LanguageProvider>
   );
 }

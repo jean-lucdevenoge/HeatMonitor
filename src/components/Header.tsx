@@ -33,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({ onSectionChange, activeSection }
           
           <div className="flex items-center space-x-4">
             <LanguageSelector />
+            
             <nav className="flex space-x-1">
             {navItems.map((item) => (
               <button

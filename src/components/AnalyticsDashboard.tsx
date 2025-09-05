@@ -15,9 +15,9 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
-import { HeatingDataService } from '../services/heatingDataService';
-import { EnergyCalculationsService } from '../services/energyCalculationsService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useData } from '../contexts/DataContext';
+import { EnergyCalculationsService } from '../services/energyCalculationsService';
 
 ChartJS.register(
   CategoryScale,
@@ -32,52 +32,67 @@ ChartJS.register(
   TimeScale
 );
 
-interface EnergyCalculation {
-  id: string;
-  date: string;
-  solar_energy_kwh: number;
-  gas_energy_kwh: number;
-  total_energy_kwh: number;
-  solar_active_minutes: number;
-  gas_active_minutes: number;
-  avg_collector_temp: number;
-  avg_dhw_temp: number;
-  avg_outside_temp: number;
-  max_collector_temp: number;
-  max_dhw_temp: number;
-  min_outside_temp: number;
-  max_outside_temp: number;
-  avg_water_pressure: number;
-  data_points_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export const AnalyticsDashboard: React.FC = () => {
   const { t } = useLanguage();
-  const [energyData, setEnergyData] = useState<EnergyCalculation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    energyData,
+    energyDataLoaded,
+    setEnergyDataCache
+  } = useData();
+  
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof EnergyCalculation>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
+  // Load data only if not already loaded
   useEffect(() => {
-    loadEnergyData();
-  }, []);
+    if (!energyDataLoaded) {
+      loadEnergyData();
+    }
+  }, [energyDataLoaded]);
 
   const loadEnergyData = async () => {
     setIsLoading(true);
     setError(null);
     try {
+      console.log('Loading energy calculations from database...');
       const data = await EnergyCalculationsService.getAllCalculations();
-      setEnergyData(data);
-    } catch (error) {
-      console.error('Error loading energy calculations:', error);
+      setEnergyDataCache(data);
+      console.log('Energy calculations loaded successfully:', data.length, 'records');
+    } catch (err) {
+      console.error('Error loading energy calculations:', err);
       setError('Failed to load energy calculations');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleRetry = () => {
+    loadEnergyData();
+  };
+
+  // Define EnergyCalculation interface locally since it's used for sorting
+  interface EnergyCalculation {
+    id: string;
+    date: string;
+    solar_energy_kwh: number;
+    gas_energy_kwh: number;
+    total_energy_kwh: number;
+    solar_active_minutes: number;
+    gas_active_minutes: number;
+    avg_collector_temp: number;
+    avg_dhw_temp: number;
+    avg_outside_temp: number;
+    max_collector_temp: number;
+    max_dhw_temp: number;
+    min_outside_temp: number;
+    max_outside_temp: number;
+    avg_water_pressure: number;
+    data_points_count: number;
+    created_at: string;
+    updated_at: string;
+  }
 
   const handleSort = (field: keyof EnergyCalculation) => {
     if (sortField === field) {
@@ -405,7 +420,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('analytics.errorLoadingData')}</h3>
           <p className="text-gray-500 mb-4">{error}</p>
           <button
-            onClick={loadEnergyData}
+            onClick={handleRetry}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
             {t('analytics.retry')}
