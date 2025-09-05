@@ -72,42 +72,17 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
 
   console.log(`Total records in database: ${count}`);
 
-  // Fetch all data in chunks to avoid limits
-  const allData: HeatingDataRow[] = [];
-  const chunkSize = 1000;
-  let offset = 0;
+  // Fetch all data at once - Supabase can handle large datasets
+  const { data, error } = await supabase
+    .from('heating_data')
+    .select('*')
+    .order('date')
+    .order('time');
 
-  while (offset < (count || 0)) {
-    console.log(`Fetching chunk ${offset} to ${offset + chunkSize - 1}`);
-    
-    const { data: chunkData, error } = await supabase
-      .from('heating_data')
-      .select('*')
-      .order('date')
-      .order('time')
-      .range(offset, offset + chunkSize - 1);
-
-    if (error) {
-      console.error('Error fetching chunk:', error);
-      throw error;
-    }
-
-    if (chunkData) {
-      allData.push(...chunkData);
-      console.log(`Fetched ${chunkData.length} records, total so far: ${allData.length}`);
-    }
-
-    offset += chunkSize;
-
-    // Safety break to avoid infinite loop
-    if (offset > 50000) {
-      console.warn('Safety break: stopping at 50,000 records');
-      break;
-    }
+  if (error) {
+    console.error('Error fetching all data:', error);
+    throw error;
   }
-
-  const data = allData;
-
   if (!data || data.length === 0) {
     console.log('Total records: 0');
     return [];
@@ -182,7 +157,7 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
     console.log(`Fetching all data and filtering in JavaScript...`);
     
     try {
-      // Get all data since PostgreSQL string comparison doesn't work well with DD.MM.YYYY format
+      // Fetch all data at once - no limits
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
