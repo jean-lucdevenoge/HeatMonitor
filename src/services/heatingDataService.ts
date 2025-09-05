@@ -175,6 +175,60 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   return dataPoints;
 }
 
+  // Get heating data by date range
+  static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
+    console.log(`Fetching heating data from ${startDate} to ${endDate}...`);
+    
+    try {
+      const { data, error } = await supabase
+        .from('heating_data')
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date')
+        .order('time');
+
+      if (error) {
+        console.error('Error fetching data by date range:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.log(`No data found for date range ${startDate} to ${endDate}`);
+        return [];
+      }
+
+      console.log(`Fetched ${data.length} records for date range`);
+      
+      // Convert to data points and sort properly by date/time
+      const dataPoints = data.map(this.dbRowToDataPoint);
+      
+      // Sort properly by converting DD.MM.YYYY to comparable format
+      dataPoints.sort((a, b) => {
+        // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+        const dateA = a.date.split('.').reverse().join('-');
+        const dateB = b.date.split('.').reverse().join('-');
+        
+        if (dateA !== dateB) {
+          return dateA.localeCompare(dateB);
+        }
+        
+        // If dates are the same, sort by time
+        return a.time.localeCompare(b.time);
+      });
+
+      console.log(`Sorted ${dataPoints.length} data points by date/time`);
+      if (dataPoints.length > 0) {
+        console.log('First record:', dataPoints[0]);
+        console.log('Last record:', dataPoints[dataPoints.length - 1]);
+      }
+
+      return dataPoints;
+    } catch (error) {
+      console.error('Error in getDataByDateRange:', error);
+      throw error;
+    }
+  }
   // Insert heating data points into database
   static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
     try {
