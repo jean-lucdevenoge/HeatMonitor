@@ -19,7 +19,8 @@ export const Dashboard: React.FC = () => {
     lastUpdated,
     heatingDataLoaded,
     setHeatingDataCache,
-    isDataLoadedForRange
+    isDataLoadedForRange,
+    currentDateRange
   } = useData();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -27,20 +28,32 @@ export const Dashboard: React.FC = () => {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize date filter to last 5 days
+  // Initialize date filter to last 5 days only on first load
   useEffect(() => {
-    const today = new Date();
-    const fiveDaysAgo = new Date(today);
-    fiveDaysAgo.setDate(today.getDate() - 5);
-    
-    setEndDate(today.toISOString().split('T')[0]);
-    setStartDate(fiveDaysAgo.toISOString().split('T')[0]);
-  }, []);
+    if (!isInitialized) {
+      // Check if we have a current date range from previous navigation
+      if (currentDateRange) {
+        // Restore the previous filter
+        setStartDate(currentDateRange.startDate);
+        setEndDate(currentDateRange.endDate);
+      } else {
+        // Set default to last 5 days only on first visit
+        const today = new Date();
+        const fiveDaysAgo = new Date(today);
+        fiveDaysAgo.setDate(today.getDate() - 5);
+        
+        setEndDate(today.toISOString().split('T')[0]);
+        setStartDate(fiveDaysAgo.toISOString().split('T')[0]);
+      }
+      setIsInitialized(true);
+    }
+  }, [currentDateRange, isInitialized]);
 
   // Load data when dates change
   useEffect(() => {
-    if (!startDate || !endDate) {
+    if (!startDate || !endDate || !isInitialized) {
       return;
     }
 
@@ -51,15 +64,14 @@ export const Dashboard: React.FC = () => {
     }
 
     loadHeatingDataForRange(startDate, endDate);
-  }, [startDate, endDate, isDataLoadedForRange]);
+  }, [startDate, endDate, isDataLoadedForRange, isInitialized]);
 
-  // Load data only when user explicitly requests it
+  // Auto-load data only if not already loaded and dates are set
   useEffect(() => {
-    // Auto-load last 5 days if no data is loaded and dates are set
-    if (!heatingDataLoaded && startDate && endDate && !isLoading) {
+    if (!heatingDataLoaded && startDate && endDate && !isLoading && isInitialized) {
       loadHeatingDataForRange(startDate, endDate);
     }
-  }, [heatingDataLoaded, startDate, endDate, isLoading]);
+  }, [heatingDataLoaded, startDate, endDate, isLoading, isInitialized]);
 
   const loadHeatingDataForRange = async (start: string, end: string) => {
     setIsLoading(true);
