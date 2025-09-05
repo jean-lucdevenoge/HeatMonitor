@@ -150,20 +150,30 @@ export class HeatingDataService {
       // Get all data first
       const allData = await this.getAllData();
       
-      // Convert startDate and endDate (YYYY-MM-DD) to Date objects
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+      // Convert startDate and endDate from YYYY-MM-DD to DD.MM.YYYY for comparison
+      const [startYear, startMonth, startDay] = startDate.split('-');
+      const [endYear, endMonth, endDay] = endDate.split('-');
+      const startDateFormatted = `${startDay}.${startMonth}.${startYear}`;
+      const endDateFormatted = `${endDay}.${endMonth}.${endYear}`;
+      
+      console.log(`Converted dates: ${startDateFormatted} to ${endDateFormatted}`);
       
       // Filter data points based on date range
       const filteredData = allData.filter(point => {
-        // Convert DD.MM.YYYY to Date object
+        // Convert DD.MM.YYYY to YYYY-MM-DD for comparison
         const [day, month, year] = point.date.split('.');
-        const pointDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const pointDateFormatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
         
-        return pointDate >= start && pointDate <= end;
+        return pointDateFormatted >= startDate && pointDateFormatted <= endDate;
       });
       
       console.log(`Filtered ${filteredData.length} data points from ${allData.length} total`);
+      
+      if (filteredData.length > 0) {
+        console.log(`First filtered record: ${filteredData[0].date} ${filteredData[0].time}`);
+        console.log(`Last filtered record: ${filteredData[filteredData.length - 1].date} ${filteredData[filteredData.length - 1].time}`);
+      }
+      
       return filteredData;
     } catch (error) {
       console.error('Error in getDataByDateRange:', error);
