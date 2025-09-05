@@ -15,8 +15,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 export type HeatingDataRow = {
   id: string;
-  date: string;
-  time: string;
+  date: string; // Will be in YYYY-MM-DD format from database
+  time: string; // Will be in HH:MM:SS format from database
   collector_temp: number;
   outside_temp: number;
   dhw_temp_top: number;

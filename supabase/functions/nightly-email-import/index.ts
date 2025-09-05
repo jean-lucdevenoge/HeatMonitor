@@ -521,10 +521,10 @@ function parseHeatingCSV(csvContent: string) {
     }
     
     const record = {
-      // Convert DD.MM.YYYY to YYYY-MM-DD for proper date storage
+      // Store date as YYYY-MM-DD (DATE type in database)
       date: `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`,
-      // Keep time as HH:MM format but ensure it's properly formatted
-      time: (values[1] || '').substring(0, 5), // Ensure HH:MM format
+      // Store time as HH:MM:SS (TIME type in database) 
+      time: (values[1] || '').substring(0, 5) + ':00', // Convert HH:MM to HH:MM:SS
       collector_temp: parseFloat(values[2]) || 0,
       outside_temp: parseFloat(values[3]) || 0,
       dhw_temp_top: parseFloat(values[4]) || 0,

@@ -61,95 +61,35 @@ export class HeatingDataService {
     console.log(`Fetching heating data from database for date range: ${startDate} to ${endDate}...`);
     
     try {
-      // Get total count first
-      const { count, error: countError } = await supabase
+      // Now we can use proper SQL date filtering since dates are stored as DATE type
+      const { data, error } = await supabase
         .from('heating_data')
-        .select('*', { count: 'exact', head: true });
+        .select('*')
+        .gte('date', startDate) // Direct date comparison now works
+        .lte('date', endDate)   // Because date is stored as DATE type
+        .order('date')
+        .order('time');
 
-      if (countError) {
-        console.error('Error getting count:', countError);
-        throw countError;
+      if (error) {
+        console.error('Error fetching data by date range:', error);
+        throw error;
       }
 
-      console.log(`Total records in date range: ${count}`);
-
-      if (!count || count === 0) {
+      if (!data || data.length === 0) {
         console.log('No records found in date range');
         return [];
       }
 
-      // Fetch data in chunks to avoid limits
-      const allData: HeatingDataRow[] = [];
-      const chunkSize = 1000;
-      let offset = 0;
-
-      while (offset < count) {
-        console.log(`Fetching chunk ${offset} to ${offset + chunkSize - 1}`);
-        
-        const { data: chunkData, error } = await supabase
-          .from('heating_data')
-          .select('*')
-          .order('date')
-          .order('time')
-          .range(offset, offset + chunkSize - 1);
-
-        if (error) {
-          console.error('Error fetching chunk:', error);
-          throw error;
-        }
-
-        if (chunkData) {
-          allData.push(...chunkData);
-          console.log(`Fetched ${chunkData.length} records, total so far: ${allData.length}`);
-        }
-
-        offset += chunkSize;
-
-        // Safety break to avoid infinite loop
-        if (offset > 50000) {
-          console.warn('Safety break: stopping at 50,000 records');
-          break;
-        }
-      }
-
-      const data = allData;
-      
-      // Filter data by date range in JavaScript (since DB dates are in DD.MM.YYYY format)
-      const filteredData = data.filter(row => {
-        try {
-          // Database now stores dates in YYYY-MM-DD format
-          const rowDate = new Date(row.date);
-          const filterStartDate = new Date(startDate);
-          const filterEndDate = new Date(endDate);
-          
-          // Set time to include full days
-          filterStartDate.setHours(0, 0, 0, 0);
-          filterEndDate.setHours(23, 59, 59, 999);
-          
-          return rowDate >= filterStartDate && rowDate <= filterEndDate;
-        } catch (error) {
-          console.error('Error parsing date:', row.date, error);
-          return false;
-        }
-      });
-
-      if (!filteredData || filteredData.length === 0) {
-        console.log('No records found in date range');
-        return [];
-      }
-
-      console.log(`Found ${filteredData.length} records in date range (filtered from ${data.length} total)`);
+      console.log(`Found ${data.length} records in date range`);
       
       // Convert to data points and sort properly by date/time
-      const dataPoints = filteredData.map(this.dbRowToDataPoint);
+      const dataPoints = data.map(this.dbRowToDataPoint);
       
-      // Sort by date and time (dates are now in YYYY-MM-DD format)
+      // Data should already be sorted by the ORDER BY clause, but ensure it
       dataPoints.sort((a, b) => {
         if (a.date !== b.date) {
           return a.date.localeCompare(b.date);
         }
-        
-        // If dates are the same, sort by time
         return a.time.localeCompare(b.time);
       });
 
@@ -318,8 +258,8 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
       const { data, error } = await supabase
         .from('heating_data')
         .select('id')
-        .gte('date', startDate) // Now both are in YYYY-MM-DD format
-        .lte('date', endDate)   // So direct comparison works
+        .gte('date', startDate) // Direct DATE comparison
+        .lte('date', endDate)   // Works with proper DATE type
         .limit(1);
 
       if (error) {
