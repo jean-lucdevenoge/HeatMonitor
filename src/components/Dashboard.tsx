@@ -41,18 +41,9 @@ export const Dashboard: React.FC = () => {
   const loadDataFromDatabase = async () => {
     setIsLoading(true);
     try {
-      // Convert YYYY-MM-DD to DD.MM.YYYY format for database query
-      const formatDateForDb = (dateStr: string) => {
-        const [year, month, day] = dateStr.split('-');
-        return `${day}.${month}.${year}`;
-      };
-
-      const dbStartDate = formatDateForDb(startDate);
-      const dbEndDate = formatDateForDb(endDate);
+      console.log(`Loading data from ${startDate} to ${endDate}`);
       
-      console.log(`Loading data from ${dbStartDate} to ${dbEndDate}`);
-      
-      const data = await HeatingDataService.getDataByDateRange(dbStartDate, dbEndDate);
+      const data = await HeatingDataService.getDataByDateRange(startDate, endDate);
       const count = await HeatingDataService.getDataCount();
       
       if (data.length > 0) {
@@ -77,7 +68,7 @@ export const Dashboard: React.FC = () => {
         
         console.log('Data loaded (summary):', {
           totalPoints: data.length,
-          dateRange: `${dbStartDate} - ${dbEndDate}`,
+          dateRange: `${startDate} - ${endDate}`,
           firstDate: data[0]?.date,
           firstTime: data[0]?.time,
           lastDate: data[data.length - 1]?.date,

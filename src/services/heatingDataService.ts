@@ -177,14 +177,25 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
 
   // Get heating data by date range
   static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
-    console.log(`Fetching heating data from ${startDate} to ${endDate}...`);
+    console.log(`Fetching heating data from ${startDate} to ${endDate} (YYYY-MM-DD format)...`);
+    
+    // Convert YYYY-MM-DD to DD.MM.YYYY format for database query
+    const formatDateForDb = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-');
+      return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+    };
+
+    const dbStartDate = formatDateForDb(startDate);
+    const dbEndDate = formatDateForDb(endDate);
+    
+    console.log(`Database query: ${dbStartDate} to ${dbEndDate} (DD.MM.YYYY format)`);
     
     try {
       const { data, error } = await supabase
         .from('heating_data')
         .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
+        .gte('date', dbStartDate)
+        .lte('date', dbEndDate)
         .order('date')
         .order('time');
 
@@ -194,7 +205,20 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
       }
 
       if (!data || data.length === 0) {
-        console.log(`No data found for date range ${startDate} to ${endDate}`);
+        console.log(`No data found for date range ${dbStartDate} to ${dbEndDate}`);
+        
+        // Debug: Let's see what dates are actually in the database
+        console.log('Checking what dates are available in database...');
+        const { data: sampleDates, error: sampleError } = await supabase
+          .from('heating_data')
+          .select('date')
+          .order('date')
+          .limit(10);
+        
+        if (!sampleError && sampleDates) {
+          console.log('Sample dates in database:', sampleDates.map(d => d.date));
+        }
+        
         return [];
       }
 
