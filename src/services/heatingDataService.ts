@@ -204,64 +204,16 @@ export class HeatingDataService {
       const { count, error } = await supabase
         .from('heating_data')
         .select('*', { count: 'exact', head: true });
-      // Fetch all data at once - no limits
-      const { data, error } = await supabase
-        .from('heating_data')
-        .select('*')
-        .order('date')
-        .order('time');
 
       if (error) {
-        console.error('Error fetching data by date range:', error);
+        console.error('Error getting count:', error);
         throw error;
       }
 
-      if (!data || data.length === 0) {
-        console.log('No data found in database');
-        return [];
-      }
-
-      console.log(`Fetched ${data.length} total records from database`);
-      
-      // Convert to data points
-      const dataPoints = data.map(this.dbRowToDataPoint);
-      
-      // Filter by date range in JavaScript
-      const filteredDataPoints = dataPoints.filter(point => {
-        // Convert DD.MM.YYYY to Date object for proper comparison
-        const [day, month, year] = point.date.split('.');
-        const pointDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
-        // Convert YYYY-MM-DD to Date object
-        const startDateObj = new Date(startDate);
-        const endDateObj = new Date(endDate);
-        
-        return pointDate >= startDateObj && pointDate <= endDateObj;
-      });
-      
-      console.log(`Filtered to ${filteredDataPoints.length} records within date range ${startDate} to ${endDate}`);
-      
-      // Sort properly by converting DD.MM.YYYY to comparable format
-      filteredDataPoints.sort((a, b) => {
-        // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-        const dateA = a.date.split('.').reverse().join('-');
-        const dateB = b.date.split('.').reverse().join('-');
-        
-        if (dateA !== dateB) {
-          return dateA.localeCompare(dateB);
-        }
-        
-        // If dates are the same, sort by time
-        return a.time.localeCompare(b.time);
-      });
-
-      if (filteredDataPoints.length > 0) {
-        console.log(`Date range in filtered data: ${filteredDataPoints[0].date} ${filteredDataPoints[0].time} to ${filteredDataPoints[filteredDataPoints.length - 1].date} ${filteredDataPoints[filteredDataPoints.length - 1].time}`);
-      }
-
-      return filteredDataPoints;
+      console.log(`Total records in database: ${count}`);
+      return count || 0;
     } catch (error) {
-      console.error('Error in getDataByDateRange:', error);
+      console.error('Error in getDataCount:', error);
       throw error;
     }
   }
