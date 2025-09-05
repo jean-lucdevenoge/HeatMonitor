@@ -60,24 +60,11 @@ export class HeatingDataService {
   static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
     console.log(`Fetching heating data from database for date range: ${startDate} to ${endDate}...`);
     
-    // Convert YYYY-MM-DD to DD.MM.YYYY format for database query
-    const formatDateForDb = (dateStr: string) => {
-      const [year, month, day] = dateStr.split('-');
-      return `${day}.${month}.${year}`;
-    };
-    
-    const dbStartDate = formatDateForDb(startDate);
-    const dbEndDate = formatDateForDb(endDate);
-    
-    console.log(`Database query dates: ${dbStartDate} to ${dbEndDate}`);
-    
     try {
       // Get total count first
       const { count, error: countError } = await supabase
         .from('heating_data')
-        .select('*', { count: 'exact', head: true })
-        .gte('date', dbStartDate)
-        .lte('date', dbEndDate);
+        .select('*', { count: 'exact', head: true });
 
       if (countError) {
         console.error('Error getting count:', countError);
@@ -102,8 +89,6 @@ export class HeatingDataService {
         const { data: chunkData, error } = await supabase
           .from('heating_data')
           .select('*')
-          .gte('date', dbStartDate)
-          .lte('date', dbEndDate)
           .order('date')
           .order('time')
           .range(offset, offset + chunkSize - 1);
@@ -128,16 +113,38 @@ export class HeatingDataService {
       }
 
       const data = allData;
+      
+      // Filter data by date range in JavaScript (since DB dates are in DD.MM.YYYY format)
+      const filteredData = data.filter(row => {
+        try {
+          // Convert DD.MM.YYYY to Date object
+          const [day, month, year] = row.date.split('.');
+          const rowDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          
+          // Convert filter dates (YYYY-MM-DD) to Date objects
+          const filterStartDate = new Date(startDate);
+          const filterEndDate = new Date(endDate);
+          
+          // Set time to include full days
+          filterStartDate.setHours(0, 0, 0, 0);
+          filterEndDate.setHours(23, 59, 59, 999);
+          
+          return rowDate >= filterStartDate && rowDate <= filterEndDate;
+        } catch (error) {
+          console.error('Error parsing date:', row.date, error);
+          return false;
+        }
+      });
 
-      if (!data || data.length === 0) {
+      if (!filteredData || filteredData.length === 0) {
         console.log('No records found in date range');
         return [];
       }
 
-      console.log(`Found ${data.length} records in date range`);
+      console.log(`Found ${filteredData.length} records in date range (filtered from ${data.length} total)`);
       
       // Convert to data points and sort properly by date/time
-      const dataPoints = data.map(this.dbRowToDataPoint);
+      const dataPoints = filteredData.map(this.dbRowToDataPoint);
       
       // Sort properly by converting DD.MM.YYYY to comparable format
       dataPoints.sort((a, b) => {
