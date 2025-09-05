@@ -76,7 +76,8 @@ export class HeatingDataService {
     const { data, error } = await supabase
       .from('heating_data')
       .select('*')
-      .order('created_at');
+      .order('date')
+      .order('time');
 
     if (error) {
       console.error('Error fetching all data:', error);
@@ -87,9 +88,25 @@ export class HeatingDataService {
       return [];
     }
 
-    console.log(`Fetched ${data.length} records from database`);
-    console.log('First record:', data[0]?.date, data[0]?.time);
-    console.log('Last record:', data[data.length - 1]?.date, data[data.length - 1]?.time);
+    console.log('RAW DATABASE DATA (first 5):');
+    data.slice(0, 5).forEach((row, i) => {
+      console.log(`${i}: ${row.date} ${row.time}`);
+    });
+    
+    console.log('RAW DATABASE DATA (last 5):');
+    data.slice(-5).forEach((row, i) => {
+      console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
+    });
+    
+    console.log('RAW DATABASE DATA (first 5):');
+    data.slice(0, 5).forEach((row, i) => {
+      console.log(`${i}: ${row.date} ${row.time}`);
+    });
+    
+    console.log('RAW DATABASE DATA (last 5):');
+    data.slice(-5).forEach((row, i) => {
+      console.log(`${data.length - 5 + i}: ${row.date} ${row.time}`);
+    });
     // Convert to data points and sort properly by date/time
     const dataPoints = data.map(this.dbRowToDataPoint);
     
@@ -107,66 +124,22 @@ export class HeatingDataService {
       return a.time.localeCompare(b.time);
     });
 
-    console.log('After sorting - First record:', dataPoints[0]?.date, dataPoints[0]?.time);
-    console.log('After sorting - Last record:', dataPoints[dataPoints.length - 1]?.date, dataPoints[dataPoints.length - 1]?.time);
+    console.log('AFTER JAVASCRIPT SORTING (first 5):');
+    dataPoints.slice(0, 5).forEach((point, i) => {
+      console.log(`${i}: ${point.date} ${point.time}`);
+    });
+    
+    console.log('AFTER JAVASCRIPT SORTING (last 5):');
+    dataPoints.slice(-5).forEach((point, i) => {
+      console.log(`${dataPoints.length - 5 + i}: ${point.date} ${point.time}`);
+    });
+    
+    console.log('AFTER JAVASCRIPT SORTING (first 5):');
+    dataPoints.slice(0, 5).forEach((point, i) => {
+      console.log(`${i}: ${point.date} ${point.time}`);
+    });
     
     return dataPoints;
-  }
-
-  // Get data filtered by date range
-  static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
-    try {
-      console.log(`Getting data from ${startDate} to ${endDate}`);
-      
-      // Get all data first
-      const allData = await this.getAllData();
-      console.log(`Total data points available: ${allData.length}`);
-      
-      // Convert startDate and endDate from YYYY-MM-DD to DD.MM.YYYY for comparison
-      const [startYear, startMonth, startDay] = startDate.split('-');
-      const [endYear, endMonth, endDay] = endDate.split('-');
-      const startDateFormatted = `${startDay}.${startMonth}.${startYear}`;
-      const endDateFormatted = `${endDay}.${endMonth}.${endYear}`;
-      
-      console.log(`Converted dates: ${startDateFormatted} to ${endDateFormatted}`);
-      
-      // Filter data points based on date range
-      const filteredData = allData.filter(point => {
-        // Convert DD.MM.YYYY to YYYY-MM-DD for comparison
-        const [day, month, year] = point.date.split('.');
-        const pointDateFormatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        
-        const isInRange = pointDateFormatted >= startDate && pointDateFormatted <= endDate;
-        
-        // Debug first few comparisons
-        if (filteredData.length < 5) {
-          console.log(`Date comparison: ${point.date} -> ${pointDateFormatted}, range: ${startDate} to ${endDate}, included: ${isInRange}`);
-        }
-        
-        return isInRange;
-      });
-      
-      console.log(`Filtered ${filteredData.length} data points from ${allData.length} total`);
-      
-      if (filteredData.length > 0) {
-        console.log(`First filtered record: ${filteredData[0].date} ${filteredData[0].time}`);
-        console.log(`Last filtered record: ${filteredData[filteredData.length - 1].date} ${filteredData[filteredData.length - 1].time}`);
-      } else {
-        console.log('No data found in the specified date range');
-        // Show some sample dates from the database for debugging
-        console.log('Sample dates in database:');
-        allData.slice(0, 10).forEach(point => {
-          const [day, month, year] = point.date.split('.');
-          const formatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-          console.log(`  ${point.date} -> ${formatted}`);
-        });
-      }
-      
-      return filteredData;
-    } catch (error) {
-      console.error('Error in getDataByDateRange:', error);
-      throw error;
-    }
   }
 
   // Insert heating data points into database
