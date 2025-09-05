@@ -170,7 +170,7 @@ export class HeatingDataService {
       
       return { inserted, duplicates };
     } catch (error) {
-      console.error('Error in insertData:', error);
+      console.error('Error in getDataCount:', error);
       throw error;
     }
   }
@@ -212,9 +212,6 @@ export class HeatingDataService {
 
       console.log(`Total records in database: ${count}`);
       return count || 0;
-    } catch (error) {
-      console.error('Error in getDataCount:', error);
-      throw error;
     }
   }
 }
