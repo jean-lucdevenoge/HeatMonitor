@@ -189,7 +189,7 @@ export const Dashboard: React.FC = () => {
                     />
                   </div>
                   <div className="text-sm text-gray-600">
-                    {t('dashboard.showing')} {filteredData.length} {t('dashboard.of')} {heatingData.length} {t('dashboard.dataPoints')}
+                    {t('dashboard.showing')} {heatingData.length} {t('dashboard.dataPoints')}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2 mt-2 sm:mt-0">
@@ -213,12 +213,12 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Filter Status */}
-        {filteredData.length !== heatingData.length && heatingData.length > 0 && (
+        {heatingData.length > 0 && startDate && endDate && (
           <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-blue-600" />
               <span className="text-sm text-blue-800">
-                {t('dashboard.filteredDataAnalysis')}: {t('dashboard.showing')} {filteredData.length} {t('dashboard.of')} {heatingData.length} {t('dashboard.dataPoints')} 
+                {t('dashboard.filteredDataAnalysis')}: {t('dashboard.showing')} {heatingData.length} {t('dashboard.dataPoints')} 
                 ({startDate} {t('dashboard.to')} {endDate})
               </span>
             </div>
@@ -226,23 +226,17 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* No Data State */}
-        {filteredData.length === 0 && heatingData.length === 0 && !isLoading && !error && (
+        {heatingData.length === 0 && !isLoading && !error && (
           <div className="mb-8">
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noData')}</h3>
-              <p className="text-gray-500">Data is automatically imported from email attachments every night at 4 AM European time.</p>
-            </div>
-          </div>
-        )}
-
-        {/* No Filtered Data State */}
-        {filteredData.length === 0 && heatingData.length > 0 && !isLoading && !error && (
-          <div className="mb-8">
-            <div className="text-center py-12">
-              <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noDataInRange')}</h3>
-              <p className="text-gray-500">{t('dashboard.noDataBetween')} {startDate} {t('dashboard.and')} {endDate}. {t('dashboard.adjustDateRange')}</p>
+              <p className="text-gray-500">
+                {startDate && endDate 
+                  ? `${t('dashboard.noDataBetween')} ${startDate} ${t('dashboard.and')} ${endDate}. ${t('dashboard.adjustDateRange')}`
+                  : 'Data is automatically imported from email attachments every night at 4 AM European time.'
+                }
+              </p>
             </div>
           </div>
         )}
@@ -273,7 +267,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Status Banner */}
-        {filteredData.length > 0 && !isLoading && (
+        {heatingData.length > 0 && !isLoading && (
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
@@ -281,15 +275,12 @@ export const Dashboard: React.FC = () => {
                   <BarChart3 className="w-6 h-6" />
                   <div>
                     <h3 className="text-lg font-semibold">
-                      {filteredData.length === heatingData.length 
-                        ? t('dashboard.historicalData')
-                        : 'Filtered Data Analysis'
-                      }
+                      {startDate && endDate ? t('dashboard.filteredDataAnalysis') : t('dashboard.historicalData')}
                     </h3>
                     <p className="opacity-90">
-                      {filteredData.length === heatingData.length
-                        ? `${t('dashboard.analyzingPoints')} ${filteredData.length} ${t('dashboard.dataPoints')}`
-                        : `Showing ${filteredData.length} of ${heatingData.length} ${t('dashboard.dataPoints')} (${startDate} to ${endDate})`
+                      {startDate && endDate
+                        ? `${t('dashboard.showingFilteredPoints')} ${heatingData.length} ${t('dashboard.dataPoints')} (${startDate} ${t('dashboard.to')} ${endDate})`
+                        : `${t('dashboard.analyzingPoints')} ${heatingData.length} ${t('dashboard.dataPoints')}`
                       }
                     </p>
                   </div>
@@ -297,13 +288,10 @@ export const Dashboard: React.FC = () => {
                 
                 <div className="text-right">
                   <p className="text-sm opacity-90">
-                    {filteredData.length === heatingData.length 
-                      ? t('dashboard.dataRange')
-                      : t('dashboard.filteredRange')
-                    }
+                    {startDate && endDate ? t('dashboard.filteredRange') : t('dashboard.dataRange')}
                   </p>
                   <p className="font-semibold">
-                    {filteredData.length > 0 ? `${filteredData[0]?.date} ${filteredData[0]?.time} - ${filteredData[filteredData.length - 1]?.date} ${filteredData[filteredData.length - 1]?.time}` : 'No data'}
+                    {heatingData.length > 0 ? `${heatingData[0]?.date} ${heatingData[0]?.time} - ${heatingData[heatingData.length - 1]?.date} ${heatingData[heatingData.length - 1]?.time}` : 'No data'}
                   </p>
                 </div>
               </div>
@@ -312,16 +300,16 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Main Content */}
-        {filteredData.length > 0 && filteredMetrics && !isLoading ? (
+        {heatingData.length > 0 && metrics && !isLoading ? (
           <div className="space-y-8">
             {/* Metrics Cards */}
-            <MetricsCards metrics={filteredMetrics} />
+            <MetricsCards metrics={metrics} />
 
             <div className="grid grid-cols-1 gap-8">
-              <SolarActivityChart data={filteredData} />
-              <EnergyChart data={filteredData} />
-              <GasPowerChart data={filteredData} />
-              <CombinedPowerChart data={filteredData} />
+              <SolarActivityChart data={heatingData} />
+              <EnergyChart data={heatingData} />
+              <GasPowerChart data={heatingData} />
+              <CombinedPowerChart data={heatingData} />
             </div>
           </div>
         ) : !isLoading && !error && (
