@@ -60,104 +60,64 @@ export class HeatingDataService {
   static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
     console.log(`Fetching heating data from database for date range: ${startDate} to ${endDate}...`);
     
-    // Convert YYYY-MM-DD to DD.MM.YYYY format for database query
-    const formatDateForDb = (dateStr: string) => {
-      const [year, month, day] = dateStr.split('-');
-      return `${day}.${month}.${year}`;
-    };
-    
-    const dbStartDate = formatDateForDb(startDate);
-    const dbEndDate = formatDateForDb(endDate);
-    
-    console.log(`Database query dates: ${dbStartDate} to ${dbEndDate}`);
-    
     try {
-      // Get total count first
-      const { count, error: countError } = await supabase
+      // Get all data and filter by date range in JavaScript
+      // This is more reliable than trying to filter DD.MM.YYYY dates in SQL
+      console.log('Fetching all data and filtering by date range...');
+      
+      const { data: allData, error } = await supabase
         .from('heating_data')
-        .select('*', { count: 'exact', head: true })
-        .gte('date', dbStartDate)
-        .lte('date', dbEndDate);
+        .select('*')
+        .order('date')
+        .order('time');
 
-      if (countError) {
-        console.error('Error getting count:', countError);
-        throw countError;
+      if (error) {
+        console.error('Error fetching data:', error);
+        throw error;
       }
 
-      console.log(`Total records in date range: ${count}`);
-
-      if (!count || count === 0) {
-        console.log('No records found in date range');
+      if (!allData || allData.length === 0) {
+        console.log('No records found in database');
         return [];
       }
 
-      // Fetch data in chunks to avoid limits
-      const allData: HeatingDataRow[] = [];
-      const chunkSize = 1000;
-      let offset = 0;
-
-      while (offset < count) {
-        console.log(`Fetching chunk ${offset} to ${offset + chunkSize - 1}`);
-        
-        const { data: chunkData, error } = await supabase
-          .from('heating_data')
-          .select('*')
-          .gte('date', dbStartDate)
-          .lte('date', dbEndDate)
-          .order('date')
-          .order('time')
-          .range(offset, offset + chunkSize - 1);
-
-        if (error) {
-          console.error('Error fetching chunk:', error);
-          throw error;
-        }
-
-        if (chunkData) {
-          allData.push(...chunkData);
-          console.log(`Fetched ${chunkData.length} records, total so far: ${allData.length}`);
-        }
-
-        offset += chunkSize;
-
-        // Safety break to avoid infinite loop
-        if (offset > 50000) {
-          console.warn('Safety break: stopping at 50,000 records');
-          break;
-        }
-      }
-
-      const data = allData;
-
-      if (!data || data.length === 0) {
-        console.log('No records found in date range');
-        return [];
-      }
-
-      console.log(`Found ${data.length} records in date range`);
+      console.log(`Fetched ${allData.length} total records from database`);
       
-      // Convert to data points and sort properly by date/time
-      const dataPoints = data.map(this.dbRowToDataPoint);
+      // Convert to data points
+      const dataPoints = allData.map(this.dbRowToDataPoint);
       
-      // Sort properly by converting DD.MM.YYYY to comparable format
-      dataPoints.sort((a, b) => {
-        // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-        const dateA = a.date.split('.').reverse().join('-');
-        const dateB = b.date.split('.').reverse().join('-');
-        
-        if (dateA !== dateB) {
-          return dateA.localeCompare(dateB);
+      // Filter by date range using proper date comparison
+      const startDateObj = new Date(startDate + 'T00:00:00');
+      const endDateObj = new Date(endDate + 'T23:59:59');
+      
+      console.log(`Filtering data between ${startDateObj.toISOString()} and ${endDateObj.toISOString()}`);
+      
+      const filteredDataPoints = dataPoints.filter(point => {
+        try {
+          // Convert DD.MM.YYYY to Date object
+          const [day, month, year] = point.date.split('.');
+          const pointDate = new Date(
+            parseInt(year), 
+            parseInt(month) - 1, // Month is 0-indexed
+            parseInt(day)
+          );
+          
+          // Check if the point date is within the range
+          return pointDate >= startDateObj && pointDate <= endDateObj;
+        } catch (error) {
+          console.warn(`Invalid date format: ${point.date}`, error);
+          return false;
         }
-        
-        // If dates are the same, sort by time
-        return a.time.localeCompare(b.time);
       });
 
-      console.log(`Returning ${dataPoints.length} sorted data points`);
-      console.log('First record:', dataPoints[0]);
-      console.log('Last record:', dataPoints[dataPoints.length - 1]);
+      console.log(`Filtered to ${filteredDataPoints.length} records in date range`);
+      
+      if (filteredDataPoints.length > 0) {
+        console.log('First filtered record:', filteredDataPoints[0]);
+        console.log('Last filtered record:', filteredDataPoints[filteredDataPoints.length - 1]);
+      }
 
-      return dataPoints;
+      return filteredDataPoints;
     } catch (error) {
       console.error('Error in getDataByDateRange:', error);
       throw error;
