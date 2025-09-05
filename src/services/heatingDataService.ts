@@ -61,24 +61,62 @@ export class HeatingDataService {
     console.log(`Fetching heating data from database for date range: ${startDate} to ${endDate}...`);
     
     try {
-      // Now we can use proper SQL date filtering since dates are stored as DATE type
-      const { data, error } = await supabase
+      // Get total count first to handle large datasets
+      const { count, error: countError } = await supabase
         .from('heating_data')
-        .select('*')
-        .gte('date', startDate) // Direct date comparison now works
-        .lte('date', endDate)   // Because date is stored as DATE type
-        .order('date')
-        .order('time');
+        .select('*', { count: 'exact', head: true })
+        .gte('date', startDate)
+        .lte('date', endDate);
 
-      if (error) {
-        console.error('Error fetching data by date range:', error);
-        throw error;
+      if (countError) {
+        console.error('Error getting count for date range:', countError);
+        throw countError;
       }
 
-      if (!data || data.length === 0) {
+      console.log(`Total records in date range: ${count}`);
+
+      if (!count || count === 0) {
         console.log('No records found in date range');
         return [];
       }
+
+      // Fetch all data in chunks to avoid limits
+      const allData: HeatingDataRow[] = [];
+      const chunkSize = 1000;
+      let offset = 0;
+
+      while (offset < count) {
+        console.log(`Fetching chunk ${offset} to ${offset + chunkSize - 1} for date range`);
+        
+        const { data: chunkData, error } = await supabase
+          .from('heating_data')
+          .select('*')
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date')
+          .order('time')
+          .range(offset, offset + chunkSize - 1);
+
+        if (error) {
+          console.error('Error fetching chunk:', error);
+          throw error;
+        }
+
+        if (chunkData) {
+          allData.push(...chunkData);
+          console.log(`Fetched ${chunkData.length} records, total so far: ${allData.length}`);
+        }
+
+        offset += chunkSize;
+
+        // Safety break to avoid infinite loop
+        if (offset > 50000) {
+          console.warn('Safety break: stopping at 50,000 records');
+          break;
+        }
+      }
+
+      const data = allData;
 
       console.log(`Found ${data.length} records in date range`);
       
