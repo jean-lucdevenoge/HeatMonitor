@@ -147,20 +147,40 @@ export class HeatingDataService {
     try {
       console.log(`Getting data from ${startDate} to ${endDate}`);
       
+      // Convert YYYY-MM-DD to DD.MM.YYYY format for database comparison
+      const convertToDbFormat = (dateStr: string): string => {
+        const [year, month, day] = dateStr.split('-');
+        return `${day}.${month}.${year}`;
+      };
+      
+      const startDateDb = convertToDbFormat(startDate);
+      const endDateDb = convertToDbFormat(endDate);
+      
+      console.log(`Converted dates: ${startDate} -> ${startDateDb}, ${endDate} -> ${endDateDb}`);
+      
       // Get all data first
       const allData = await this.getAllData();
       
-      // Convert startDate and endDate (YYYY-MM-DD) to Date objects
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+      // Convert DD.MM.YYYY database format to Date objects for comparison
+      const convertDbDateToDateObject = (dbDateStr: string): Date => {
+        const [day, month, year] = dbDateStr.split('.');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      };
+      
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
       
       // Filter data points based on date range
       const filteredData = allData.filter(point => {
-        // Convert DD.MM.YYYY to Date object
-        const [day, month, year] = point.date.split('.');
-        const pointDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const pointDate = convertDbDateToDateObject(point.date);
+        const isInRange = pointDate >= startDateObj && pointDate <= endDateObj;
         
-        return pointDate >= start && pointDate <= end;
+        // Debug first few comparisons
+        if (filteredData.length < 5) {
+          console.log(`Point ${point.date} (${pointDate.toISOString().split('T')[0]}) in range [${startDate}, ${endDate}]? ${isInRange}`);
+        }
+        
+        return isInRange;
       });
       
       console.log(`Filtered ${filteredData.length} data points from ${allData.length} total`);
