@@ -263,13 +263,28 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   <BarChart3 className="w-6 h-6" />
                   <div>
-                    <h3 className="text-lg font-semibold">{t('dashboard.historicalData')}</h3>
-                    <p className="opacity-90">{t('dashboard.analyzingPoints')} {filteredData.length} {t('dashboard.dataPoints')} (Total: {heatingData.length})</p>
+                    <h3 className="text-lg font-semibold">
+                      {filteredData.length === heatingData.length 
+                        ? t('dashboard.historicalData')
+                        : 'Filtered Data Analysis'
+                      }
+                    </h3>
+                    <p className="opacity-90">
+                      {filteredData.length === heatingData.length
+                        ? `${t('dashboard.analyzingPoints')} ${filteredData.length} ${t('dashboard.dataPoints')}`
+                        : `Showing ${filteredData.length} of ${heatingData.length} ${t('dashboard.dataPoints')} (${startDate} to ${endDate})`
+                      }
+                    </p>
                   </div>
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm opacity-90">{t('dashboard.dataRange')}</p>
+                  <p className="text-sm opacity-90">
+                    {filteredData.length === heatingData.length 
+                      ? t('dashboard.dataRange')
+                      : 'Filtered Range'
+                    }
+                  </p>
                   <p className="font-semibold">
                     {filteredData.length > 0 ? `${filteredData[0]?.date} ${filteredData[0]?.time} - ${filteredData[filteredData.length - 1]?.date} ${filteredData[filteredData.length - 1]?.time}` : 'No data'}
                   </p>
