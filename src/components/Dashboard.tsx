@@ -288,7 +288,7 @@ export const Dashboard: React.FC = () => {
                   <p className="font-semibold">
                     {filteredData.length > 0 ? `${filteredData[0]?.date} ${filteredData[0]?.time} - ${filteredData[filteredData.length - 1]?.date} ${filteredData[filteredData.length - 1]?.time}` : 'No data'}
                   </p>
-                      : `${t('dashboard.showingFilteredPoints')} ${filteredData.length} ${t('dashboard.ofTotalPoints')} ${heatingData.length} ${t('dashboard.dataPoints')} (${startDate} ${t('dashboard.to')} ${endDate})`
+                </div>
               </div>
             </div>
           </div>
