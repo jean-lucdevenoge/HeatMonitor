@@ -12,6 +12,7 @@ import {
   Legend,
   ArcElement,
   TimeScale,
+  Filler,
 } from 'chart.js';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
@@ -29,7 +30,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
-  TimeScale
+  TimeScale,
+  Filler
 );
 
 export const AnalyticsDashboard: React.FC = () => {

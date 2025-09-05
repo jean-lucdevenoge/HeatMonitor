@@ -11,6 +11,7 @@ import {
   TimeScale,
   ChartOptions,
   Plugin,
+  Filler,
 } from 'chart.js';
 import { getRelativePosition } from 'chart.js/helpers';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -28,7 +29,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  zoomPlugin
+  zoomPlugin,
+  Filler
 );
 
 interface SolarActivityChartProps {
