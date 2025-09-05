@@ -110,8 +110,16 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
   const houseHeatingActivity: number[] = React.useMemo(() => {
     return sampledData.map((d) => {
       const isSolarPumpOff = d.collectorPump !== 'On';
-      const isBurnerActive = d.burnerState.includes('operation') || 
-                            (d.boilerModulation && d.boilerModulation !== '----' && parseFloat(d.boilerModulation.replace('%', '').trim()) > 0);
+      
+      // Check if burner is actually producing heat (modulation > 0)
+      let hasModulation = false;
+      if (d.boilerModulation && d.boilerModulation !== '----') {
+        const modulation = parseFloat(d.boilerModulation.replace('%', '').trim());
+        hasModulation = !isNaN(modulation) && modulation > 0;
+      }
+      
+      const isBurnerActive = d.burnerState.includes('operation') && hasModulation;
+      
       return (isSolarPumpOff && isBurnerActive) ? 1 : 0;
     });
   }, [sampledData]);
