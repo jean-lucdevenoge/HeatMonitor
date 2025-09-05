@@ -152,6 +152,11 @@ export const translations: Translations = {
     de: 'Zurücksetzen',
     fr: 'Réinitialiser'
   },
+  'dashboard.applyFilter': {
+    en: 'Apply Filter',
+    de: 'Filter übernehmen',
+    fr: 'Appliquer le filtre'
+  },
   'dashboard.close': {
     en: 'Close',
     de: 'Schließen',

@@ -221,7 +221,7 @@ export const Dashboard: React.FC = () => {
                     disabled={!pendingStartDate || !pendingEndDate || isLoading}
                     className="px-4 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                   >
-                    Filter übernehmen
+                    {t('dashboard.applyFilter')}
                   </button>
                   <div className="text-sm text-gray-600">
                     {t('dashboard.showing')} {heatingData.length} {t('dashboard.dataPoints')}
