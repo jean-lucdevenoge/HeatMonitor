@@ -138,11 +138,6 @@ export class HeatingDataService {
         
         const isInRange = pointDateFormatted >= startDate && pointDateFormatted <= endDate;
         
-        // Debug first few comparisons
-        if (filteredData.length < 5) {
-          console.log(`Date comparison: ${point.date} -> ${pointDateFormatted}, range: ${startDate} to ${endDate}, included: ${isInRange}`);
-        }
-        
         return isInRange;
       });
       
