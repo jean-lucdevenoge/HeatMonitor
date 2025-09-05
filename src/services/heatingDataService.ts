@@ -138,9 +138,9 @@ export class HeatingDataService {
         
         const isInRange = pointDateFormatted >= startDate && pointDateFormatted <= endDate;
         
-        // Debug first few points
-        if (index < 5) {
-          console.log(`Point ${index}: ${point.date} -> ${pointDateFormatted}, range: ${startDate} to ${endDate}, inRange: ${isInRange}`);
+        // Debug first few comparisons
+        if (filteredData.length < 5) {
+          console.log(`Date comparison: ${point.date} -> ${pointDateFormatted}, range: ${startDate} to ${endDate}, included: ${isInRange}`);
         }
         
         return isInRange;
@@ -158,7 +158,7 @@ export class HeatingDataService {
         allData.slice(0, 10).forEach(point => {
           const [day, month, year] = point.date.split('.');
           const formatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-          console.log(`  ${point.date} -> ${formatted}, comparing with range ${startDate} to ${endDate}`);
+          console.log(`  ${point.date} -> ${formatted}`);
         });
       }
       
