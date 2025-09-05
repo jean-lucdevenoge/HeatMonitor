@@ -56,6 +56,114 @@ export class HeatingDataService {
     };
   }
 
+  // Get data for a specific date range
+  static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
+    console.log(`Fetching heating data from database for date range: ${startDate} to ${endDate}...`);
+    
+    // Convert YYYY-MM-DD to DD.MM.YYYY format for database query
+    const formatDateForDb = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}.${month}.${year}`;
+    };
+    
+    const dbStartDate = formatDateForDb(startDate);
+    const dbEndDate = formatDateForDb(endDate);
+    
+    console.log(`Database query dates: ${dbStartDate} to ${dbEndDate}`);
+    
+    try {
+      // Get total count first
+      const { count, error: countError } = await supabase
+        .from('heating_data')
+        .select('*', { count: 'exact', head: true })
+        .gte('date', dbStartDate)
+        .lte('date', dbEndDate);
+
+      if (countError) {
+        console.error('Error getting count:', countError);
+        throw countError;
+      }
+
+      console.log(`Total records in date range: ${count}`);
+
+      if (!count || count === 0) {
+        console.log('No records found in date range');
+        return [];
+      }
+
+      // Fetch data in chunks to avoid limits
+      const allData: HeatingDataRow[] = [];
+      const chunkSize = 1000;
+      let offset = 0;
+
+      while (offset < count) {
+        console.log(`Fetching chunk ${offset} to ${offset + chunkSize - 1}`);
+        
+        const { data: chunkData, error } = await supabase
+          .from('heating_data')
+          .select('*')
+          .gte('date', dbStartDate)
+          .lte('date', dbEndDate)
+          .order('date')
+          .order('time')
+          .range(offset, offset + chunkSize - 1);
+
+        if (error) {
+          console.error('Error fetching chunk:', error);
+          throw error;
+        }
+
+        if (chunkData) {
+          allData.push(...chunkData);
+          console.log(`Fetched ${chunkData.length} records, total so far: ${allData.length}`);
+        }
+
+        offset += chunkSize;
+
+        // Safety break to avoid infinite loop
+        if (offset > 50000) {
+          console.warn('Safety break: stopping at 50,000 records');
+          break;
+        }
+      }
+
+      const data = allData;
+
+      if (!data || data.length === 0) {
+        console.log('No records found in date range');
+        return [];
+      }
+
+      console.log(`Found ${data.length} records in date range`);
+      
+      // Convert to data points and sort properly by date/time
+      const dataPoints = data.map(this.dbRowToDataPoint);
+      
+      // Sort properly by converting DD.MM.YYYY to comparable format
+      dataPoints.sort((a, b) => {
+        // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+        const dateA = a.date.split('.').reverse().join('-');
+        const dateB = b.date.split('.').reverse().join('-');
+        
+        if (dateA !== dateB) {
+          return dateA.localeCompare(dateB);
+        }
+        
+        // If dates are the same, sort by time
+        return a.time.localeCompare(b.time);
+      });
+
+      console.log(`Returning ${dataPoints.length} sorted data points`);
+      console.log('First record:', dataPoints[0]);
+      console.log('Last record:', dataPoints[dataPoints.length - 1]);
+
+      return dataPoints;
+    } catch (error) {
+      console.error('Error in getDataByDateRange:', error);
+      throw error;
+    }
+  }
+
 // Get all heating data from database
 static async getAllData(): Promise<HeatingDataPoint[]> {
   console.log('Fetching all heating data from database...');

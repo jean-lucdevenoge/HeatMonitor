@@ -18,7 +18,8 @@ export const Dashboard: React.FC = () => {
     dataCount,
     lastUpdated,
     heatingDataLoaded,
-    setHeatingDataCache
+    setHeatingDataCache,
+    isDataLoadedForRange
   } = useData();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +27,6 @@ export const Dashboard: React.FC = () => {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [filteredData, setFilteredData] = useState(heatingData);
 
   // Initialize date filter to last 5 days
   useEffect(() => {
@@ -38,43 +38,58 @@ export const Dashboard: React.FC = () => {
     setStartDate(fiveDaysAgo.toISOString().split('T')[0]);
   }, []);
 
-  // Filter data when dates change or heatingData changes
+  // Load data when dates change
   useEffect(() => {
-    if (!startDate || !endDate || heatingData.length === 0) {
-      setFilteredData(heatingData);
+    if (!startDate || !endDate) {
       return;
     }
 
-    const startDateTime = new Date(startDate + 'T00:00:00');
-    const endDateTime = new Date(endDate + 'T23:59:59');
+    // Check if data is already loaded for this range
+    if (isDataLoadedForRange(startDate, endDate)) {
+      console.log('Data already loaded for this date range, skipping reload');
+      return;
+    }
 
-    const filtered = heatingData.filter(point => {
-      // Convert DD.MM.YYYY HH:MM to Date object for comparison
-      const [day, month, year] = point.date.split('.');
-      const [hours, minutes] = point.time.split(':');
-      const pointDate = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
-      
-      return pointDate >= startDateTime && pointDate <= endDateTime;
-    });
-
-    setFilteredData(filtered);
-  }, [startDate, endDate, heatingData]);
+    loadHeatingDataForRange(startDate, endDate);
+  }, [startDate, endDate, isDataLoadedForRange]);
 
   // Load data only when user explicitly requests it
   useEffect(() => {
-    // Only auto-load if we have no data and haven't loaded before
-    if (!heatingDataLoaded && heatingData.length === 0 && !isLoading) {
-      loadHeatingData();
+    // Auto-load last 5 days if no data is loaded and dates are set
+    if (!heatingDataLoaded && startDate && endDate && !isLoading) {
+      loadHeatingDataForRange(startDate, endDate);
     }
-  }, []); // Empty dependency - runs only once on mount
+  }, [heatingDataLoaded, startDate, endDate, isLoading]);
 
-  const loadHeatingData = async () => {
+  const loadHeatingDataForRange = async (start: string, end: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log(`Loading heating data for date range: ${start} to ${end}`);
+      const data = await HeatingDataService.getDataByDateRange(start, end);
+      
+      if (data.length > 0) {
+        const calculatedMetrics = calculateMetrics(data);
+        setHeatingDataCache(data, calculatedMetrics, data.length, { startDate: start, endDate: end });
+        
+        console.log('Heating data loaded successfully:', {
+          totalPoints: data.length,
+          dateRange: `${start} to ${end}`,
+          firstDate: data[0]?.date,
+          lastDate: data[data.length - 1]?.date,
+        });
+      } else {
+        setHeatingDataCache([], null, 0, { startDate: start, endDate: end });
+      }
+    } catch (err) {
+      console.error('Error loading heating data:', err);
+      setError('Failed to load heating data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadAllHeatingData = async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -103,7 +118,11 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleRetry = () => {
-    loadHeatingData();
+    if (startDate && endDate) {
+      loadHeatingDataForRange(startDate, endDate);
+    } else {
+      loadAllHeatingData();
+    }
   };
 
   const clearDateFilter = () => {
@@ -116,8 +135,6 @@ export const Dashboard: React.FC = () => {
     setShowDateFilter(false);
   };
 
-  // Calculate metrics for filtered data
-  const filteredMetrics = filteredData.length > 0 ? calculateMetrics(filteredData) : metrics;
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

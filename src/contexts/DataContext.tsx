@@ -29,17 +29,21 @@ interface DataContextType {
   dataCount: number;
   lastUpdated: string | null;
   heatingDataLoaded: boolean;
+  currentDateRange: { startDate: string; endDate: string } | null;
   
   // Energy calculations cache
   energyData: EnergyCalculation[];
   energyDataLoaded: boolean;
   
   // Cache setters
-  setHeatingDataCache: (data: HeatingDataPoint[], metrics: SystemMetrics | null, count: number) => void;
+  setHeatingDataCache: (data: HeatingDataPoint[], metrics: SystemMetrics | null, count: number, dateRange?: { startDate: string; endDate: string }) => void;
   setEnergyDataCache: (data: EnergyCalculation[]) => void;
   
   // Cache status
   clearCache: () => void;
+  
+  // Check if data is loaded for date range
+  isDataLoadedForRange: (startDate: string, endDate: string) => boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -63,17 +67,19 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [dataCount, setDataCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [heatingDataLoaded, setHeatingDataLoaded] = useState(false);
+  const [currentDateRange, setCurrentDateRange] = useState<{ startDate: string; endDate: string } | null>(null);
   
   // Energy data cache
   const [energyData, setEnergyData] = useState<EnergyCalculation[]>([]);
   const [energyDataLoaded, setEnergyDataLoaded] = useState(false);
 
-  const setHeatingDataCache = (data: HeatingDataPoint[], calculatedMetrics: SystemMetrics | null, count: number) => {
+  const setHeatingDataCache = (data: HeatingDataPoint[], calculatedMetrics: SystemMetrics | null, count: number, dateRange?: { startDate: string; endDate: string }) => {
     setHeatingData(data);
     setMetrics(calculatedMetrics);
     setDataCount(count);
     setLastUpdated(new Date().toLocaleString());
     setHeatingDataLoaded(true);
+    setCurrentDateRange(dateRange || null);
   };
 
   const setEnergyDataCache = (data: EnergyCalculation[]) => {
@@ -89,6 +95,16 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     setHeatingDataLoaded(false);
     setEnergyData([]);
     setEnergyDataLoaded(false);
+    setCurrentDateRange(null);
+  };
+
+  const isDataLoadedForRange = (startDate: string, endDate: string): boolean => {
+    if (!heatingDataLoaded || !currentDateRange) {
+      return false;
+    }
+    
+    // Check if the requested range is the same as or within the currently loaded range
+    return currentDateRange.startDate === startDate && currentDateRange.endDate === endDate;
   };
 
   const value: DataContextType = {
@@ -98,6 +114,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     dataCount,
     lastUpdated,
     heatingDataLoaded,
+    currentDateRange,
     
     // Energy calculations cache
     energyData,
@@ -109,6 +126,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     
     // Cache management
     clearCache,
+    isDataLoadedForRange,
   };
 
   return (
