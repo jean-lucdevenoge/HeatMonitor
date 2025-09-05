@@ -242,17 +242,6 @@ export class HeatingDataService {
   static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
     console.log(`Fetching data for date range: ${startDate} to ${endDate}`);
     
-    // Convert YYYY-MM-DD to DD.MM.YYYY for database comparison
-    const convertToDbFormat = (dateStr: string): string => {
-      const [year, month, day] = dateStr.split('-');
-      return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
-    };
-    
-    const dbStartDate = convertToDbFormat(startDate);
-    const dbEndDate = convertToDbFormat(endDate);
-    
-    console.log(`Converted to DB format: ${dbStartDate} to ${dbEndDate}`);
-    
     try {
       // Fetch all data at once - no limits
       const { data, error } = await supabase
