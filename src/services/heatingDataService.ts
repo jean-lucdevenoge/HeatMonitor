@@ -204,45 +204,6 @@ export class HeatingDataService {
       const { count, error } = await supabase
         .from('heating_data')
         .select('*', { count: 'exact', head: true });
-
-      if (error) {
-        console.error('Error getting data count:', error);
-        return 0;
-      }
-
-      console.log(`Database reports ${count} total records`);
-      return count || 0;
-    } catch (error) {
-      console.error('Error in getDataCount:', error);
-      return 0;
-    }
-  }
-
-  // Delete all data (for testing purposes)
-  static async deleteAllData(): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('heating_data')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
-
-      if (error) {
-        console.error('Error deleting all data:', error);
-        throw error;
-      }
-
-      console.log('All heating data deleted');
-    } catch (error) {
-      console.error('Error in deleteAllData:', error);
-      throw error;
-    }
-  }
-
-  // Get data by date range (YYYY-MM-DD format)
-  static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
-    console.log(`Fetching data for date range: ${startDate} to ${endDate}`);
-    
-    try {
       // Fetch all data at once - no limits
       const { data, error } = await supabase
         .from('heating_data')
@@ -260,7 +221,7 @@ export class HeatingDataService {
         return [];
       }
 
-      console.log(`Fetched ${data.length} total records, now filtering by date range...`);
+      console.log(`Fetched ${data.length} total records from database`);
       
       // Convert to data points
       const dataPoints = data.map(this.dbRowToDataPoint);
@@ -294,19 +255,8 @@ export class HeatingDataService {
         return a.time.localeCompare(b.time);
       });
 
-      console.log(`Sorted ${filteredDataPoints.length} data points by date/time`);
       if (filteredDataPoints.length > 0) {
-        console.log('First record:', filteredDataPoints[0]);
-        console.log('Last record:', filteredDataPoints[filteredDataPoints.length - 1]);
-      } else {
-        console.log('No records found in the specified date range');
-        
-        // Debug: Show available date range
-        if (dataPoints.length > 0) {
-          const firstDate = dataPoints[0].date;
-          const lastDate = dataPoints[dataPoints.length - 1].date;
-          console.log(`Available data range: ${firstDate} to ${lastDate}`);
-        }
+        console.log(`Date range in filtered data: ${filteredDataPoints[0].date} ${filteredDataPoints[0].time} to ${filteredDataPoints[filteredDataPoints.length - 1].date} ${filteredDataPoints[filteredDataPoints.length - 1].time}`);
       }
 
       return filteredDataPoints;
