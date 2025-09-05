@@ -138,22 +138,6 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   dataPoints.slice(0, 5).forEach((point, i) => {
     console.log(`${i}: ${point.date} ${point.time}`);
   });
-  
-  console.log('AFTER JAVASCRIPT SORTING (last 5):');
-  dataPoints.slice(-5).forEach((point, i) => {
-    console.log(`${dataPoints.length - 5 + i}: ${point.date} ${point.time}`);
-  });
-  console.log(`Total records: ${dataPoints.length}`);
-  console.log('First record:', dataPoints[0]);
-  console.log('Last record:', dataPoints[dataPoints.length - 1]);
-
-  return dataPoints;
-}
-
-  // Get heating data by date range
-  static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
-    console.log(`Fetching heating data from ${startDate} to ${endDate} (YYYY-MM-DD format)...`);
-    
     console.log(`Fetching all data and filtering in JavaScript...`);
     
     try {
