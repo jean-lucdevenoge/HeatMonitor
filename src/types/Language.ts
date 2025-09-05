@@ -82,6 +82,81 @@ export const translations: Translations = {
     de: 'Laden Sie eine CSV-Datei hoch, um Ihr Heizsystem zu überwachen',
     fr: 'Téléchargez un fichier CSV pour commencer à surveiller votre système de chauffage'
   },
+  'dashboard.filteredDataAnalysis': {
+    en: 'Filtered Data Analysis',
+    de: 'Gefilterte Datenanalyse',
+    fr: 'Analyse des données filtrées'
+  },
+  'dashboard.showingFilteredPoints': {
+    en: 'Showing',
+    de: 'Zeige',
+    fr: 'Affichage de'
+  },
+  'dashboard.ofTotalPoints': {
+    en: 'of',
+    de: 'von',
+    fr: 'sur'
+  },
+  'dashboard.filteredRange': {
+    en: 'Filtered Range',
+    de: 'Gefilterter Bereich',
+    fr: 'Plage filtrée'
+  },
+  'dashboard.noDataInRange': {
+    en: 'No Data in Selected Range',
+    de: 'Keine Daten im ausgewählten Bereich',
+    fr: 'Aucune donnée dans la plage sélectionnée'
+  },
+  'dashboard.noDataBetween': {
+    en: 'No data found between',
+    de: 'Keine Daten gefunden zwischen',
+    fr: 'Aucune donnée trouvée entre'
+  },
+  'dashboard.and': {
+    en: 'and',
+    de: 'und',
+    fr: 'et'
+  },
+  'dashboard.adjustDateRange': {
+    en: 'Try adjusting the date range.',
+    de: 'Versuchen Sie, den Datumsbereich anzupassen.',
+    fr: 'Essayez d\'ajuster la plage de dates.'
+  },
+  'dashboard.filter': {
+    en: 'Filter',
+    de: 'Filter',
+    fr: 'Filtre'
+  },
+  'dashboard.from': {
+    en: 'From:',
+    de: 'Von:',
+    fr: 'De:'
+  },
+  'dashboard.to': {
+    en: 'To:',
+    de: 'Bis:',
+    fr: 'À:'
+  },
+  'dashboard.showing': {
+    en: 'Showing',
+    de: 'Zeige',
+    fr: 'Affichage'
+  },
+  'dashboard.of': {
+    en: 'of',
+    de: 'von',
+    fr: 'sur'
+  },
+  'dashboard.reset': {
+    en: 'Reset',
+    de: 'Zurücksetzen',
+    fr: 'Réinitialiser'
+  },
+  'dashboard.close': {
+    en: 'Close',
+    de: 'Schließen',
+    fr: 'Fermer'
+  },
   
   // Metrics
   'metrics.avgCollectorTemp': {

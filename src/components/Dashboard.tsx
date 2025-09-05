@@ -126,7 +126,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.title')}</h2>
-              <p className="text-gray-600">{t('dashboard.subtitle')}</p>
+              <span>{t('dashboard.filter')}</span>
             </div>
             
             <div className="mt-4 sm:mt-0 flex items-center space-x-4">
@@ -154,7 +154,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                   <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">From:</label>
+                    <label className="text-sm font-medium text-gray-700">{t('dashboard.from')}</label>
                     <input
                       type="date"
                       value={startDate}
@@ -163,7 +163,7 @@ export const Dashboard: React.FC = () => {
                     />
                   </div>
                   <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">To:</label>
+                    <label className="text-sm font-medium text-gray-700">{t('dashboard.to')}</label>
                     <input
                       type="date"
                       value={endDate}
@@ -172,7 +172,7 @@ export const Dashboard: React.FC = () => {
                     />
                   </div>
                   <div className="text-sm text-gray-600">
-                    Showing {filteredData.length} of {heatingData.length} data points
+                    {t('dashboard.showing')} {filteredData.length} {t('dashboard.of')} {heatingData.length} {t('dashboard.dataPoints')}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2 mt-2 sm:mt-0">
@@ -181,13 +181,13 @@ export const Dashboard: React.FC = () => {
                     className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
                   >
                     <X className="w-4 h-4" />
-                    <span>Reset</span>
+                    <span>{t('dashboard.reset')}</span>
                   </button>
                   <button
                     onClick={() => setShowDateFilter(false)}
                     className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
                   >
-                    Close
+                    {t('dashboard.close')}
                   </button>
                 </div>
               </div>
@@ -201,8 +201,8 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-blue-600" />
               <span className="text-sm text-blue-800">
-                Filtered view: Showing {filteredData.length} of {heatingData.length} data points 
-                ({startDate} to {endDate})
+                {t('dashboard.filteredDataAnalysis')}: {t('dashboard.showing')} {filteredData.length} {t('dashboard.of')} {heatingData.length} {t('dashboard.dataPoints')} 
+                ({startDate} {t('dashboard.to')} {endDate})
               </span>
             </div>
           </div>
@@ -224,8 +224,8 @@ export const Dashboard: React.FC = () => {
           <div className="mb-8">
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">No Data in Selected Range</h3>
-              <p className="text-gray-500">No data found between {startDate} and {endDate}. Try adjusting the date range.</p>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('dashboard.noDataInRange')}</h3>
+              <p className="text-gray-500">{t('dashboard.noDataBetween')} {startDate} {t('dashboard.and')} {endDate}. {t('dashboard.adjustDateRange')}</p>
             </div>
           </div>
         )}
@@ -282,13 +282,13 @@ export const Dashboard: React.FC = () => {
                   <p className="text-sm opacity-90">
                     {filteredData.length === heatingData.length 
                       ? t('dashboard.dataRange')
-                      : 'Filtered Range'
+                      : t('dashboard.filteredRange')
                     }
                   </p>
                   <p className="font-semibold">
                     {filteredData.length > 0 ? `${filteredData[0]?.date} ${filteredData[0]?.time} - ${filteredData[filteredData.length - 1]?.date} ${filteredData[filteredData.length - 1]?.time}` : 'No data'}
                   </p>
-                </div>
+                      : `${t('dashboard.showingFilteredPoints')} ${filteredData.length} ${t('dashboard.ofTotalPoints')} ${heatingData.length} ${t('dashboard.dataPoints')} (${startDate} ${t('dashboard.to')} ${endDate})`
               </div>
             </div>
           </div>
