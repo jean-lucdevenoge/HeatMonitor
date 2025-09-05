@@ -29,6 +29,8 @@ export const Dashboard: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [pendingStartDate, setPendingStartDate] = useState('');
+  const [pendingEndDate, setPendingEndDate] = useState('');
 
   // Initialize date filter to last 5 days only on first load
   useEffect(() => {
@@ -38,6 +40,8 @@ export const Dashboard: React.FC = () => {
         // Restore the previous filter
         setStartDate(currentDateRange.startDate);
         setEndDate(currentDateRange.endDate);
+        setPendingStartDate(currentDateRange.startDate);
+        setPendingEndDate(currentDateRange.endDate);
       } else {
         // Set default to last 5 days only on first visit
         const today = new Date();
@@ -46,25 +50,12 @@ export const Dashboard: React.FC = () => {
         
         setEndDate(today.toISOString().split('T')[0]);
         setStartDate(fiveDaysAgo.toISOString().split('T')[0]);
+        setPendingEndDate(today.toISOString().split('T')[0]);
+        setPendingStartDate(fiveDaysAgo.toISOString().split('T')[0]);
       }
       setIsInitialized(true);
     }
   }, [currentDateRange, isInitialized]);
-
-  // Load data when dates change
-  useEffect(() => {
-    if (!startDate || !endDate || !isInitialized) {
-      return;
-    }
-
-    // Check if data is already loaded for this range
-    if (isDataLoadedForRange(startDate, endDate)) {
-      console.log('Data already loaded for this date range, skipping reload');
-      return;
-    }
-
-    loadHeatingDataForRange(startDate, endDate);
-  }, [startDate, endDate, isDataLoadedForRange, isInitialized]);
 
   // Auto-load data only if not already loaded and dates are set
   useEffect(() => {
@@ -137,6 +128,26 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleApplyFilter = () => {
+    if (!pendingStartDate || !pendingEndDate) {
+      return;
+    }
+
+    // Check if data is already loaded for this range
+    if (isDataLoadedForRange(pendingStartDate, pendingEndDate)) {
+      console.log('Data already loaded for this date range, skipping reload');
+      // Still update the active dates to show the filter is applied
+      setStartDate(pendingStartDate);
+      setEndDate(pendingEndDate);
+      return;
+    }
+
+    // Update active dates and load data
+    setStartDate(pendingStartDate);
+    setEndDate(pendingEndDate);
+    loadHeatingDataForRange(pendingStartDate, pendingEndDate);
+  };
+
   const clearDateFilter = () => {
     const today = new Date();
     const fiveDaysAgo = new Date(today);
@@ -144,7 +155,12 @@ export const Dashboard: React.FC = () => {
     
     setEndDate(today.toISOString().split('T')[0]);
     setStartDate(fiveDaysAgo.toISOString().split('T')[0]);
+    setPendingEndDate(today.toISOString().split('T')[0]);
+    setPendingStartDate(fiveDaysAgo.toISOString().split('T')[0]);
     setShowDateFilter(false);
+    
+    // Apply the reset filter immediately
+    loadHeatingDataForRange(fiveDaysAgo.toISOString().split('T')[0], today.toISOString().split('T')[0]);
   };
 
   return (
@@ -186,8 +202,8 @@ export const Dashboard: React.FC = () => {
                     <label className="text-sm font-medium text-gray-700">{t('dashboard.from')}</label>
                     <input
                       type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
+                      value={pendingStartDate}
+                      onChange={(e) => setPendingStartDate(e.target.value)}
                       className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -195,11 +211,18 @@ export const Dashboard: React.FC = () => {
                     <label className="text-sm font-medium text-gray-700">{t('dashboard.to')}</label>
                     <input
                       type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
+                      value={pendingEndDate}
+                      onChange={(e) => setPendingEndDate(e.target.value)}
                       className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <button
+                    onClick={handleApplyFilter}
+                    disabled={!pendingStartDate || !pendingEndDate || isLoading}
+                    className="px-4 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  >
+                    Filter übernehmen
+                  </button>
                   <div className="text-sm text-gray-600">
                     {t('dashboard.showing')} {heatingData.length} {t('dashboard.dataPoints')}
                   </div>
