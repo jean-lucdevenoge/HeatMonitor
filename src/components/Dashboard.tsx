@@ -4,6 +4,7 @@ import { SolarActivityChart } from './SolarActivityChart';
 import { EnergyChart } from './EnergyChart';
 import { GasPowerChart } from './GasPowerChart';
 import { CombinedPowerChart } from './CombinedPowerChart';
+import { HouseHeatingChart } from './HouseHeatingChart';
 import { Calendar, AlertCircle, BarChart3, Filter, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useData } from '../contexts/DataContext';
@@ -345,6 +346,7 @@ export const Dashboard: React.FC = () => {
               <EnergyChart data={heatingData} />
               <GasPowerChart data={heatingData} />
               <CombinedPowerChart data={heatingData} />
+              <HouseHeatingChart data={heatingData} />
             </div>
           </div>
         ) : !isLoading && !error && (

@@ -256,6 +256,71 @@ export const translations: Translations = {
     de: 'Oranger Hintergrund: Solar aktiv, Roter Hintergrund: Gas aktiv (können sich überlappen)',
     fr: 'Arrière-plan orange: solaire actif, Arrière-plan rouge: gaz actif (peuvent se chevaucher)'
   },
+  'chart.houseHeatingAnalysis': {
+    en: 'House Heating Energy Analysis',
+    de: 'Hausheizungs-Energieanalyse',
+    fr: 'Analyse énergétique chauffage maison'
+  },
+  'chart.houseHeatingNote': {
+    en: 'Energy used for house heating when solar pump is off and burner is active',
+    de: 'Energie für Hausheizung bei ausgeschalteter Solarpumpe und aktivem Brenner',
+    fr: 'Énergie utilisée pour le chauffage de la maison quand la pompe solaire est éteinte et le brûleur actif'
+  },
+  'chart.houseHeatingPower': {
+    en: 'House Heating Power (kW)',
+    de: 'Hausheizungsleistung (kW)',
+    fr: 'Puissance chauffage maison (kW)'
+  },
+  'chart.houseHeatingEnergy': {
+    en: 'House Heating Energy',
+    de: 'Hausheizungsenergie',
+    fr: 'Énergie chauffage maison'
+  },
+  'chart.houseHeatingActive': {
+    en: 'House Heating Active',
+    de: 'Hausheizung aktiv',
+    fr: 'Chauffage maison actif'
+  },
+  'chart.totalHouseHeatingEnergy': {
+    en: 'Total House Heating Energy',
+    de: 'Gesamte Hausheizungsenergie',
+    fr: 'Énergie totale chauffage maison'
+  },
+  'chart.houseHeatingPowerAxis': {
+    en: 'House Heating Power (kW)',
+    de: 'Hausheizungsleistung (kW)',
+    fr: 'Puissance chauffage maison (kW)'
+  },
+  'chart.houseHeatingActiveBackground': {
+    en: 'House Heating Active (Background)',
+    de: 'Hausheizung aktiv (Hintergrund)',
+    fr: 'Chauffage maison actif (Arrière-plan)'
+  },
+  'chart.houseHeatingActiveBackgroundDesc': {
+    en: 'Blue background when house heating is active (solar pump off, burner on)',
+    de: 'Blauer Hintergrund bei aktiver Hausheizung (Solarpumpe aus, Brenner an)',
+    fr: 'Arrière-plan bleu quand le chauffage maison est actif (pompe solaire éteinte, brûleur allumé)'
+  },
+  'chart.houseHeatingPowerLegend': {
+    en: 'House Heating Power',
+    de: 'Hausheizungsleistung',
+    fr: 'Puissance chauffage maison'
+  },
+  'chart.houseHeatingPowerDesc': {
+    en: '10 kW × Boiler Modulation when solar pump off and burner active',
+    de: '10 kW × Kesselmodulation bei ausgeschalteter Solarpumpe und aktivem Brenner',
+    fr: '10 kW × Modulation chaudière quand pompe solaire éteinte et brûleur actif'
+  },
+  'chart.houseHeatingPowerCalculationNote': {
+    en: 'House heating power: 10 kW × Boiler Modulation (%) when solar pump is off and burner is active',
+    de: 'Hausheizungsleistung: 10 kW × Kesselmodulation (%) bei ausgeschalteter Solarpumpe und aktivem Brenner',
+    fr: 'Puissance chauffage maison: 10 kW × Modulation chaudière (%) quand pompe solaire éteinte et brûleur actif'
+  },
+  'chart.blueBackgroundNote': {
+    en: 'Blue background indicates periods when house heating system is actively heating',
+    de: 'Blauer Hintergrund zeigt Zeiten an, in denen die Hausheizung aktiv heizt',
+    fr: 'L\'arrière-plan bleu indique les périodes où le système de chauffage maison chauffe activement'
+  },
   
   // Buttons
   'button.resetZoom': {
