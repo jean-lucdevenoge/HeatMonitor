@@ -117,11 +117,8 @@ export class HeatingDataService {
       // Filter data by date range in JavaScript (since DB dates are in DD.MM.YYYY format)
       const filteredData = data.filter(row => {
         try {
-          // Convert DD.MM.YYYY to Date object
-          const [day, month, year] = row.date.split('.');
-          const rowDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          
-          // Convert filter dates (YYYY-MM-DD) to Date objects
+          // Database now stores dates in YYYY-MM-DD format
+          const rowDate = new Date(row.date);
           const filterStartDate = new Date(startDate);
           const filterEndDate = new Date(endDate);
           
@@ -146,14 +143,10 @@ export class HeatingDataService {
       // Convert to data points and sort properly by date/time
       const dataPoints = filteredData.map(this.dbRowToDataPoint);
       
-      // Sort properly by converting DD.MM.YYYY to comparable format
+      // Sort by date and time (dates are now in YYYY-MM-DD format)
       dataPoints.sort((a, b) => {
-        // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-        const dateA = a.date.split('.').reverse().join('-');
-        const dateB = b.date.split('.').reverse().join('-');
-        
-        if (dateA !== dateB) {
-          return dateA.localeCompare(dateB);
+        if (a.date !== b.date) {
+          return a.date.localeCompare(b.date);
         }
         
         // If dates are the same, sort by time
@@ -250,14 +243,10 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   // Convert to data points and sort properly by date/time
   const dataPoints = data.map(this.dbRowToDataPoint);
   
-  // Sort properly by converting DD.MM.YYYY to comparable format
+  // Sort by date and time (dates are now in YYYY-MM-DD format)
   dataPoints.sort((a, b) => {
-    // Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-    const dateA = a.date.split('.').reverse().join('-');
-    const dateB = b.date.split('.').reverse().join('-');
-    
-    if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
+    if (a.date !== b.date) {
+      return a.date.localeCompare(b.date);
     }
     
     // If dates are the same, sort by time
@@ -329,8 +318,8 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
       const { data, error } = await supabase
         .from('heating_data')
         .select('id')
-        .gte('date', startDate)
-        .lte('date', endDate)
+        .gte('date', startDate) // Now both are in YYYY-MM-DD format
+        .lte('date', endDate)   // So direct comparison works
         .limit(1);
 
       if (error) {

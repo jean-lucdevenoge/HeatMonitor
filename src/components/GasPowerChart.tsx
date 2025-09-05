@@ -93,7 +93,7 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
   // Time labels
   const chartLabels: Date[] = React.useMemo(() => {
     return sampledData.map((d) => {
-      const [day, month, year] = d.date.split('.');
+      const [year, month, day] = d.date.split('-'); // Now YYYY-MM-DD format
       const [hours, minutes] = d.time.split(':');
       return new Date(
         parseInt(year),

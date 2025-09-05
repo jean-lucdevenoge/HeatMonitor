@@ -24,7 +24,11 @@ export const parseHeatingCSV = (csvContent: string): HeatingDataPoint[] => {
     const values = line.split(';').map(v => v.trim());
     
     return {
-      date: values[0] || '',
+      // Convert DD.MM.YYYY to YYYY-MM-DD for consistency with database
+      date: values[0] ? (() => {
+        const [day, month, year] = values[0].split('.');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      })() : '',
       time: values[1] || '',
       collectorTemp: parseFloat(values[2]) || 0,
       outsideTemp: parseFloat(values[3]) || 0,
@@ -50,12 +54,8 @@ export const parseHeatingCSV = (csvContent: string): HeatingDataPoint[] => {
 
   // Sort by date and time to ensure chronological order
   return parsedData.sort((a, b) => {
-    // Convert DD.MM.YYYY to YYYY-MM-DD for proper sorting
-    const dateA = a.date.split('.').reverse().join('-');
-    const dateB = b.date.split('.').reverse().join('-');
-    
-    if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
+    if (a.date !== b.date) {
+      return a.date.localeCompare(b.date);
     }
     
     // If dates are the same, sort by time

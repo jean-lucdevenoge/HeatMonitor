@@ -521,8 +521,10 @@ function parseHeatingCSV(csvContent: string) {
     }
     
     const record = {
-      date: originalDate,
-      time: values[1] || '',
+      // Convert DD.MM.YYYY to YYYY-MM-DD for proper date storage
+      date: `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`,
+      // Keep time as HH:MM format but ensure it's properly formatted
+      time: (values[1] || '').substring(0, 5), // Ensure HH:MM format
       collector_temp: parseFloat(values[2]) || 0,
       outside_temp: parseFloat(values[3]) || 0,
       dhw_temp_top: parseFloat(values[4]) || 0,
@@ -581,7 +583,7 @@ async function calculateEnergyForCsvData(supabaseClient: any, parsedData: any[])
     }
     
     // Get unique dates from the CSV data
-    const uniqueDates = [...new Set(parsedData.map(record => record.date))]
+    const uniqueDates = [...new Set(parsedData.map(record => record.date))] // Now in YYYY-MM-DD format
     console.log(`📅 Found ${uniqueDates.length} unique dates in CSV data:`, uniqueDates)
     
     // Show data distribution per date
@@ -611,18 +613,14 @@ async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
   try {
     console.log(`🔋 Starting energy calculation for date: ${csvDate}`)
     
-    // Convert DD.MM.YYYY to YYYY-MM-DD for database queries
-    const [day, month, year] = csvDate.split('.')
-    const dbDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-    
-    console.log(`🔍 Date conversion: ${csvDate} -> ${dbDate}`)
+    // csvDate is now already in YYYY-MM-DD format
     console.log(`🔍 Looking for heating data on date: ${csvDate}`)
     
     // Check if energy calculation already exists for this date
     const { data: existingCalc, error: existingError } = await supabaseClient
       .from('energy_calculations')
       .select('id')
-      .eq('date', dbDate)
+      .eq('date', csvDate)
       .single()
     
     if (existingError && existingError.code !== 'PGRST116') {
@@ -639,7 +637,7 @@ async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
     const { data: dayData, error: fetchError } = await supabaseClient
       .from('heating_data')
       .select('*')
-      .eq('date', csvDate)
+      .eq('date', csvDate) // Now both are in YYYY-MM-DD format
       .order('time')
     
     if (fetchError) {
@@ -849,7 +847,7 @@ async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
     
     // Create energy record
     const energyRecord = {
-      date: dbDate,
+      date: csvDate, // Already in YYYY-MM-DD format
       solar_energy_kwh: Number(solarEnergyKwh.toFixed(3)),
       gas_energy_kwh: Number(gasEnergyKwh.toFixed(3)),
       total_energy_kwh: Number(totalEnergyKwh.toFixed(3)),
