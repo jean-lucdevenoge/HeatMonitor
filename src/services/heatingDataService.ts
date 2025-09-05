@@ -142,6 +142,35 @@ export class HeatingDataService {
     return dataPoints;
   }
 
+  // Get data filtered by date range
+  static async getDataByDateRange(startDate: string, endDate: string): Promise<HeatingDataPoint[]> {
+    try {
+      console.log(`Getting data from ${startDate} to ${endDate}`);
+      
+      // Get all data first
+      const allData = await this.getAllData();
+      
+      // Convert startDate and endDate (YYYY-MM-DD) to Date objects
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Filter data points based on date range
+      const filteredData = allData.filter(point => {
+        // Convert DD.MM.YYYY to Date object
+        const [day, month, year] = point.date.split('.');
+        const pointDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        return pointDate >= start && pointDate <= end;
+      });
+      
+      console.log(`Filtered ${filteredData.length} data points from ${allData.length} total`);
+      return filteredData;
+    } catch (error) {
+      console.error('Error in getDataByDateRange:', error);
+      throw error;
+    }
+  }
+
   // Insert heating data points into database
   static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
     try {
