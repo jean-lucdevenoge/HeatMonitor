@@ -136,7 +136,9 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
       const modulation = isNaN(m) ? 0 : m;
       // Only return power if modulation is greater than 0
       if (modulation <= 0) return 0;
-      return 10 * (modulation / 100);
+      // Map modulation 0-100% to power 20-100%: power% = 20% + (modulation% × 80% / 100%)
+      const powerPercent = 20 + (modulation * 80 / 100);
+      return 10 * (powerPercent / 100);
     });
   }, [sampledData, houseHeatingActivity]);
 
@@ -604,6 +606,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
             <span className="font-medium">{t('chart.houseHeatingPowerLegend')}</span>
           </div>
           <p className="text-gray-600 mt-1">10 kW × Boiler Modulation when burner active and DHW pump off</p>
+          <p className="text-xs text-gray-500 mt-1">Modulation 0%=20% power, 100%=100% power (linear)</p>
           <p className="font-semibold text-blue-700" data-house-heating-legend-energy>
             {visibleStats.totalHouseHeatingEnergy.toFixed(2)} kWh
           </p>
@@ -634,6 +637,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
         </p>
         <ul className="mt-1 ml-4 list-disc">
           <li>House heating energy calculated when burner is active AND DHW pump is off</li>
+          <li>Power mapping: 0% modulation = 20% power (2 kW), 100% modulation = 100% power (10 kW)</li>
           <li>{t('chart.energyValuesCumulative')}</li>
           <li>Blue background indicates periods when house heating system is actively heating (burner on, DHW pump off)</li>
           <li>
