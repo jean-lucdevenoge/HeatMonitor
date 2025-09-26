@@ -111,7 +111,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
   // House heating activity (0/1) - when solar pump is off and burner is on
   const houseHeatingActivity: number[] = React.useMemo(() => {
     return sampledData.map((d) => {
-      const isSolarPumpOff = d.collectorPump !== 'On';
+      const isDhwPumpOff = d.dhwPump !== 'On';
       
       // Check if burner is actually producing heat (modulation > 0)
       let hasModulation = false;
@@ -122,7 +122,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
       
       const isBurnerActive = d.burnerState.includes('operation') && hasModulation;
       
-      return (isSolarPumpOff && isBurnerActive) ? 1 : 0;
+      return (isBurnerActive && isDhwPumpOff) ? 1 : 0;
     });
   }, [sampledData]);
 
@@ -393,7 +393,18 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           borderWidth: 1,
           callbacks: {
             afterTitle: (items: any) => {
-              const i = items[0].dataIndex;
+                const data = sampledData[i];
+                const isDhwPumpOff = data.dhwPump !== 'On';
+                const isBurnerActive = data.burnerState.includes('operation');
+                const hasModulation = data.boilerModulation && data.boilerModulation !== '----';
+                
+                if (houseHeatingActivity[i] === 1) {
+                  return '🏠 House Heating: Active (Burner ON, DHW Pump OFF)';
+                } else if (isBurnerActive && !isDhwPumpOff) {
+                  return '🚿 Water Heating: Active (Burner ON, DHW Pump ON)';
+                } else {
+                  return '⭕ House Heating: Inactive';
+                }
               return houseHeatingActivity[i] === 1 ? '🏠 House Heating: Active' : '⭕ House Heating: Inactive';
             },
           },
@@ -589,7 +600,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
             <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
             <span className="font-medium">{t('chart.houseHeatingPowerLegend')}</span>
           </div>
-          <p className="text-gray-600 mt-1">{t('chart.houseHeatingPowerDesc')}</p>
+          <p className="text-gray-600 mt-1">10 kW × Boiler Modulation when burner active and DHW pump off</p>
           <p className="font-semibold text-blue-700" data-house-heating-legend-energy>
             {visibleStats.totalHouseHeatingEnergy.toFixed(2)} kWh
           </p>
@@ -619,9 +630,9 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           <strong>{t('chart.note')}:</strong> {t('chart.houseHeatingPowerCalculationNote')}
         </p>
         <ul className="mt-1 ml-4 list-disc">
-          <li>{t('chart.houseHeatingNote')}</li>
+          <li>House heating energy calculated when burner is active AND DHW pump is off</li>
           <li>{t('chart.energyValuesCumulative')}</li>
-          <li>{t('chart.blueBackgroundNote')}</li>
+          <li>Blue background indicates periods when house heating system is actively heating (burner on, DHW pump off)</li>
           <li>
             <strong>{t('chart.marking')}:</strong> {t('chart.markingInstructions')}
           </li>

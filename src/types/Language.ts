@@ -262,14 +262,14 @@ export const translations: Translations = {
     fr: 'Analyse énergétique chauffage maison'
   },
   'chart.houseHeatingNote': {
-    en: 'Energy used for house heating when solar pump is off and burner is active',
-    de: 'Energie für Hausheizung bei ausgeschalteter Solarpumpe und aktivem Brenner',
-    fr: 'Énergie utilisée pour le chauffage de la maison quand la pompe solaire est éteinte et le brûleur actif'
+    en: 'Energy used for house heating when burner is active and DHW pump is off',
+    de: 'Energie für Hausheizung bei aktivem Brenner und ausgeschalteter Warmwasserpumpe',
+    fr: 'Énergie utilisée pour le chauffage de la maison quand le brûleur est actif et la pompe ECS éteinte'
   },
   'chart.houseHeatingPower': {
-    en: 'House Heating Power (kW)',
-    de: 'Hausheizungsleistung (kW)',
-    fr: 'Puissance chauffage maison (kW)'
+    en: 'Blue background when house heating is active (burner on, DHW pump off)',
+    de: 'Blauer Hintergrund bei aktiver Hausheizung (Brenner an, Warmwasserpumpe aus)',
+    fr: 'Arrière-plan bleu quand le chauffage maison est actif (brûleur allumé, pompe ECS éteinte)'
   },
   'chart.houseHeatingEnergy': {
     en: 'House Heating Energy',
@@ -307,19 +307,19 @@ export const translations: Translations = {
     fr: 'Puissance chauffage maison'
   },
   'chart.houseHeatingPowerDesc': {
-    en: '10 kW × Boiler Modulation when solar pump off and burner active',
-    de: '10 kW × Kesselmodulation bei ausgeschalteter Solarpumpe und aktivem Brenner',
-    fr: '10 kW × Modulation chaudière quand pompe solaire éteinte et brûleur actif'
+    en: '10 kW × Boiler Modulation when burner active and DHW pump off',
+    de: '10 kW × Kesselmodulation bei aktivem Brenner und ausgeschalteter Warmwasserpumpe',
+    fr: '10 kW × Modulation chaudière quand brûleur actif et pompe ECS éteinte'
   },
   'chart.houseHeatingPowerCalculationNote': {
-    en: 'House heating power: 10 kW × Boiler Modulation (%) when solar pump is off and burner is active',
-    de: 'Hausheizungsleistung: 10 kW × Kesselmodulation (%) bei ausgeschalteter Solarpumpe und aktivem Brenner',
-    fr: 'Puissance chauffage maison: 10 kW × Modulation chaudière (%) quand pompe solaire éteinte et brûleur actif'
+    en: 'House heating power: 10 kW × Boiler Modulation (%) when burner is active and DHW pump is off',
+    de: 'Hausheizungsleistung: 10 kW × Kesselmodulation (%) bei aktivem Brenner und ausgeschalteter Warmwasserpumpe',
+    fr: 'Puissance chauffage maison: 10 kW × Modulation chaudière (%) quand brûleur actif et pompe ECS éteinte'
   },
   'chart.blueBackgroundNote': {
-    en: 'Blue background indicates periods when house heating system is actively heating',
-    de: 'Blauer Hintergrund zeigt Zeiten an, in denen die Hausheizung aktiv heizt',
-    fr: 'L\'arrière-plan bleu indique les périodes où le système de chauffage maison chauffe activement'
+    en: 'Blue background indicates periods when house heating system is actively heating (burner on, DHW pump off)',
+    de: 'Blauer Hintergrund zeigt Zeiten an, in denen die Hausheizung aktiv heizt (Brenner an, Warmwasserpumpe aus)',
+    fr: 'L\'arrière-plan bleu indique les périodes où le système de chauffage maison chauffe activement (brûleur allumé, pompe ECS éteinte)'
   },
   
   // Buttons
