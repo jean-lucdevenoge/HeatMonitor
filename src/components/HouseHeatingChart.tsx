@@ -393,6 +393,10 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           borderWidth: 1,
           callbacks: {
             afterTitle: (items: any) => {
+             if (!items || items.length === 0) return '';
+             const i = items[0].dataIndex;
+             if (i >= sampledData.length) return '';
+             
                 const data = sampledData[i];
                 const isDhwPumpOff = data.dhwPump !== 'On';
                 const isBurnerActive = data.burnerState.includes('operation');
@@ -405,7 +409,6 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
                 } else {
                   return '⭕ House Heating: Inactive';
                 }
-              return houseHeatingActivity[i] === 1 ? '🏠 House Heating: Active' : '⭕ House Heating: Inactive';
             },
           },
         },
