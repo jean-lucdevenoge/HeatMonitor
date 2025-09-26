@@ -113,14 +113,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
     return sampledData.map((d) => {
       const isDhwPumpOff = d.dhwPump === 'Off' || d.dhwPump === '' || d.dhwPump !== 'On';
       
-      // Check if burner is actually producing heat (modulation > 0)
-      let hasModulation = false;
-      if (d.boilerModulation && d.boilerModulation !== '----') {
-        const modulation = parseFloat(d.boilerModulation.replace('%', '').trim());
-        hasModulation = !isNaN(modulation) && modulation > 0;
-      }
-      
-      const isBurnerActive = (d.burnerState.includes('In operation') || d.burnerState.includes('home run')) && hasModulation;
+      const isBurnerActive = d.burnerState.includes('In operation') || d.burnerState.includes('home run');
       
       return (isBurnerActive && isDhwPumpOff) ? 1 : 0;
     });
@@ -402,7 +395,6 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
                 const data = sampledData[i];
                 const isDhwPumpOff = data.dhwPump === 'Off' || data.dhwPump === '' || data.dhwPump !== 'On';
                 const isBurnerActive = data.burnerState.includes('In operation') || data.burnerState.includes('home run');
-                const hasModulation = data.boilerModulation && data.boilerModulation !== '----';
                 
                 if (houseHeatingActivity[i] === 1) {
                   return '🏠 House Heating: Active (Burner ON, DHW Pump OFF)';
@@ -598,7 +590,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
             <span className="font-medium">{t('chart.houseHeatingActiveBackground')}</span>
           </div>
-          <p className="text-gray-600 mt-1">{t('chart.houseHeatingActiveBackgroundDesc')}</p>
+          <p className="text-gray-600 mt-1">Blue background when burner is in operation (In operation or home run) and DHW pump is off</p>
         </div>
         <div className="bg-blue-50 p-3 rounded-lg">
           <div className="flex items-center space-x-2">
@@ -639,7 +631,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           <li>House heating energy calculated when burner is active AND DHW pump is off</li>
           <li>Power mapping: 0% modulation = 20% power (2 kW), 100% modulation = 100% power (10 kW)</li>
           <li>{t('chart.energyValuesCumulative')}</li>
-          <li>Blue background indicates periods when house heating system is actively heating (burner on, DHW pump off)</li>
+          <li>Blue background indicates periods when burner is in operation (In operation or home run) and DHW pump is off</li>
           <li>
             <strong>{t('chart.marking')}:</strong> {t('chart.markingInstructions')}
           </li>
