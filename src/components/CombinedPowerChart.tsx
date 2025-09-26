@@ -147,14 +147,12 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
     return sampledData.map((d, i) => {
       // Only calculate power when gas system is active (DHW pump on)
       if (gasActivity[i] !== 1) return 0;
-      let modulation = 0;
-      if (d.boilerModulation && d.boilerModulation !== '----') {
-        const m = parseFloat(d.boilerModulation.replace('%', '').trim());
-        modulation = isNaN(m) ? 0 : m;
-      }
-      // Only return power if modulation is greater than 0
-      if (modulation <= 0) return 0;
-      return 10 * (modulation / 100);
+      if (!d.boilerModulation || d.boilerModulation === '----') return 0;
+      const m = parseFloat(d.boilerModulation.replace('%', '').trim());
+      const modulation = isNaN(m) ? 0 : m;
+      // Map modulation 0-100% to power 20-100%: power% = 20% + (modulation% × 80% / 100%)
+      const powerPercent = 20 + (modulation * 80 / 100);
+      return 10 * (powerPercent / 100);
     });
   }, [sampledData, gasActivity]);
 
