@@ -111,7 +111,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
   // House heating activity (0/1) - when solar pump is off and burner is on
   const houseHeatingActivity: number[] = React.useMemo(() => {
     return sampledData.map((d) => {
-      const isDhwPumpOff = d.dhwPump !== 'On';
+      const isDhwPumpOff = d.dhwPump === 'Off' || d.dhwPump === '' || d.dhwPump !== 'On';
       
       // Check if burner is actually producing heat (modulation > 0)
       let hasModulation = false;
@@ -120,7 +120,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
         hasModulation = !isNaN(modulation) && modulation > 0;
       }
       
-      const isBurnerActive = d.burnerState.includes('operation') && hasModulation;
+      const isBurnerActive = (d.burnerState.includes('in operation') || d.burnerState.includes('home run')) && hasModulation;
       
       return (isBurnerActive && isDhwPumpOff) ? 1 : 0;
     });
@@ -398,8 +398,8 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
              if (i >= sampledData.length) return '';
              
                 const data = sampledData[i];
-                const isDhwPumpOff = data.dhwPump !== 'On';
-                const isBurnerActive = data.burnerState.includes('operation');
+                const isDhwPumpOff = data.dhwPump === 'Off' || data.dhwPump === '' || data.dhwPump !== 'On';
+                const isBurnerActive = data.burnerState.includes('in operation') || data.burnerState.includes('home run');
                 const hasModulation = data.boilerModulation && data.boilerModulation !== '----';
                 
                 if (houseHeatingActivity[i] === 1) {
