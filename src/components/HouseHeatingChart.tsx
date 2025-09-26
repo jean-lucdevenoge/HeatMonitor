@@ -112,7 +112,15 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
   const houseHeatingActivity: number[] = React.useMemo(() => {
     return sampledData.map((d) => {
       const isDhwPumpOff = d.dhwPump === 'Off' || d.dhwPump === '' || d.dhwPump !== 'On';
-      const isBurnerActive = d.burnerState.includes('In operation') || d.burnerState.includes('home run');
+      
+      // Check if burner is actually producing heat (modulation > 0)
+      let hasModulation = false;
+      if (d.boilerModulation && d.boilerModulation !== '----') {
+        const modulation = parseFloat(d.boilerModulation.replace('%', '').trim());
+        hasModulation = !isNaN(modulation) && modulation > 0;
+      }
+      
+      const isBurnerActive = (d.burnerState.includes('In operation') || d.burnerState.includes('home run')) && hasModulation;
       
       return (isBurnerActive && isDhwPumpOff) ? 1 : 0;
     });
@@ -121,12 +129,8 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
   // House heating power (kW): 10 kW * modulation% when house heating is active
   const houseHeatingPower: number[] = React.useMemo(() => {
     return sampledData.map((d, i) => {
-      const isDhwPumpOff = d.dhwPump === 'Off' || d.dhwPump === '' || d.dhwPump !== 'On';
-      const isBurnerActive = d.burnerState.includes('In operation') || d.burnerState.includes('home run');
-      
-      // Only calculate power when burner is active, DHW pump is off, AND there's modulation
-      if (!isBurnerActive || !isDhwPumpOff) return 0;
-      
+      // Only calculate power when house heating system is active
+      if (houseHeatingActivity[i] !== 1) return 0;
       if (!d.boilerModulation || d.boilerModulation === '----') return 0;
       const m = parseFloat(d.boilerModulation.replace('%', '').trim());
       const modulation = isNaN(m) ? 0 : m;
@@ -398,8 +402,9 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
                 const data = sampledData[i];
                 const isDhwPumpOff = data.dhwPump === 'Off' || data.dhwPump === '' || data.dhwPump !== 'On';
                 const isBurnerActive = data.burnerState.includes('In operation') || data.burnerState.includes('home run');
+                const hasModulation = data.boilerModulation && data.boilerModulation !== '----';
                 
-                if (isBurnerActive && isDhwPumpOff) {
+                if (houseHeatingActivity[i] === 1) {
                   return '🏠 House Heating: Active (Burner ON, DHW Pump OFF)';
                 } else if (isBurnerActive && !isDhwPumpOff) {
                   return '🚿 Water Heating: Active (Burner ON, DHW Pump ON)';
@@ -600,8 +605,8 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
             <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
             <span className="font-medium">{t('chart.houseHeatingPowerLegend')}</span>
           </div>
-          <p className="text-gray-600 mt-1">Power calculated when burner active and DHW pump off</p>
-          <p className="text-xs text-gray-500 mt-1">Background shows burner status (blue = burner on, DHW pump off)</p>
+          <p className="text-gray-600 mt-1">10 kW × Boiler Modulation when burner active and DHW pump off</p>
+          <p className="text-xs text-gray-500 mt-1">Modulation 0%=20% power, 100%=100% power (linear)</p>
           <p className="font-semibold text-blue-700" data-house-heating-legend-energy>
             {visibleStats.totalHouseHeatingEnergy.toFixed(2)} kWh
           </p>
@@ -631,10 +636,10 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           <strong>{t('chart.note')}:</strong> {t('chart.houseHeatingPowerCalculationNote')}
         </p>
         <ul className="mt-1 ml-4 list-disc">
-          <li>Background shows when burner is active AND DHW pump is off (house heating mode)</li>
-          <li>Power calculated only when modulation > 0%: 0% modulation = 20% power, 100% = 100% power</li>
+          <li>House heating energy calculated when burner is active AND DHW pump is off</li>
+          <li>Power mapping: 0% modulation = 20% power (2 kW), 100% modulation = 100% power (10 kW)</li>
           <li>{t('chart.energyValuesCumulative')}</li>
-          <li>Blue background shows burner status regardless of modulation level</li>
+          <li>Blue background indicates periods when house heating system is actively heating (burner on, DHW pump off)</li>
           <li>
             <strong>{t('chart.marking')}:</strong> {t('chart.markingInstructions')}
           </li>
