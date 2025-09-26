@@ -121,9 +121,9 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
       if (!d.boilerModulation || d.boilerModulation === '----') return 0;
       const m = parseFloat(d.boilerModulation.replace('%', '').trim());
       const modulation = isNaN(m) ? 0 : m;
-      // Only return power if modulation is greater than 0
-      if (modulation <= 0) return 0;
-      return 10 * (modulation / 100);
+      // Map modulation 0-100% to power 20-100%: power% = 20% + (modulation% × 80% / 100%)
+      const powerPercent = 20 + (modulation * 80 / 100);
+      return 10 * (powerPercent / 100);
     });
   }, [sampledData, gasActivity]);
 
@@ -576,7 +576,8 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
             <div className="w-3 h-3 bg-red-600 rounded-full"></div>
             <span className="font-medium">{t('chart.gasPowerLegend')}</span>
           </div>
-          <p className="text-gray-600 mt-1">{t('chart.gasPowerDesc')}</p>
+          <p className="text-gray-600 mt-1">10 kW × Boiler Modulation when DHW pump active</p>
+          <p className="text-xs text-gray-500 mt-1">Modulation 0%=20% power, 100%=100% power (linear)</p>
           <p className="font-semibold text-red-700" data-gas-legend-energy>
             {visibleStats.totalGasEnergy.toFixed(2)} kWh
           </p>
@@ -606,7 +607,8 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
           <strong>{t('chart.note')}:</strong> {t('chart.gasPowerCalculationNote')}
         </p>
         <ul className="mt-1 ml-4 list-disc">
-          <li>{t('chart.gasPowerFormula')}</li>
+          <li>Gas power: 10 kW × Power% where Power% = 20% + (Modulation% × 80% / 100%)</li>
+          <li>Power mapping: 0% modulation = 20% power (2 kW), 100% modulation = 100% power (10 kW)</li>
           <li>{t('chart.energyValuesCumulative')}</li>
           <li>{t('chart.redBackgroundNote')}</li>
           <li>
