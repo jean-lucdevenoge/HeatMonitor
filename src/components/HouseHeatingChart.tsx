@@ -127,8 +127,6 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
       if (!d.boilerModulation || d.boilerModulation === '----') return 0;
       const m = parseFloat(d.boilerModulation.replace('%', '').trim());
       const modulation = isNaN(m) ? 0 : m;
-      // Only return power if modulation is greater than 0
-      if (modulation <= 0) return 0;
       // Map modulation 0-100% to power 20-100%: power% = 20% + (modulation% × 80% / 100%)
       const powerPercent = 20 + (modulation * 80 / 100);
       return 10 * (powerPercent / 100);
