@@ -149,14 +149,6 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
   }, [houseHeatingPower]);
 
   // Boiler modulation series for display
-  const boilerModulation: number[] = React.useMemo(() => {
-    return sampledData.map((d) => {
-      if (!d.boilerModulation || d.boilerModulation === '----') return 0;
-      const m = parseFloat(d.boilerModulation.replace('%', '').trim());
-      return isNaN(m) ? 0 : m;
-    });
-  }, [sampledData]);
-
   // Markers plugin
   const markersPlugin: Plugin<'line'> = React.useMemo(
     () => ({
@@ -345,19 +337,9 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           pointRadius: 0,
           yAxisID: 'y',
         },
-        {
-          label: t('chart.boilerModulation'),
-          data: boilerModulation,
-          borderColor: '#7C3AED',
-          backgroundColor: 'rgba(124, 58, 237, 0.1)',
-          borderWidth: 1,
-          tension: 0.4,
-          pointRadius: 0,
-          yAxisID: 'y1',
-        },
       ],
     }),
-    [chartLabels, houseHeatingPower, boilerModulation, t]
+    [chartLabels, houseHeatingPower, t]
   );
 
   const options: ChartOptions<'line'> = React.useMemo(
@@ -438,13 +420,6 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           position: 'left',
           grid: { color: 'rgba(0, 0, 0, 0.1)' },
           title: { display: true, text: t('chart.houseHeatingPowerAxis') },
-        },
-        y1: {
-          type: 'linear',
-          display: true,
-          position: 'right',
-          grid: { drawOnChartArea: false },
-          title: { display: true, text: t('chart.boilerModulationAxis') },
         },
       },
     }),
@@ -600,13 +575,6 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           <p className="font-semibold text-blue-700" data-house-heating-legend-energy>
             {visibleStats.totalHouseHeatingEnergy.toFixed(2)} kWh
           </p>
-        </div>
-        <div className="bg-purple-50 p-3 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-            <span className="font-medium">{t('chart.boilerModulationLegend')}</span>
-          </div>
-          <p className="text-gray-600 mt-1">{t('chart.boilerModulationDesc')}</p>
         </div>
       </div>
 
