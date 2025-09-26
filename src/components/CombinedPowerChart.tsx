@@ -673,7 +673,8 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
             <div className="w-3 h-3 bg-red-600 rounded-full"></div>
             <span className="font-medium">{t('chart.gasPowerLegend')}</span>
           </div>
-          <p className="text-gray-600 mt-1">{t('chart.gasPowerDesc')}</p>
+          <p className="text-gray-600 mt-1">10 kW × Power% where Power% = 20% + (Modulation% × 80% / 100%)</p>
+          <p className="text-xs text-gray-500 mt-1">Modulation 0%=20% power, 100%=100% power (linear)</p>
           <p className="font-semibold text-red-700" data-combined-gas-legend-energy>
             {visibleStats.totalGasEnergy.toFixed(2)} kWh
           </p>
@@ -695,6 +696,18 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
             {t('chart.totalGasEnergy')}: {visibleStats.totalGasEnergy.toFixed(2)} kWh
           </span>
         </div>
+        <p>
+          <strong>{t('chart.note')}:</strong> {t('chart.combinedPowerNote')}
+        </p>
+        <ul className="mt-1 ml-4 list-disc">
+          <li>Solar power: Temperature difference (B6-B31) × flow rate (5.5 L/min) × specific heat (4.18 kJ/kg·K) ÷ 60 when solar active</li>
+          <li>Gas power: 10 kW × Power% where Power% = 20% + (Modulation% × 80% / 100%) when DHW pump active</li>
+          <li>Power mapping: 0% modulation = 20% power (2 kW), 100% modulation = 100% power (10 kW)</li>
+          <li>{t('chart.energyValuesCumulative')}</li>
+          <li>
+            <strong>{t('chart.marking')}:</strong> {t('chart.markingInstructions')}
+          </li>
+        </ul>
       </div>
     </div>
   );
