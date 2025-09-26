@@ -120,7 +120,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
         hasModulation = !isNaN(modulation) && modulation > 0;
       }
       
-      const isBurnerActive = (d.burnerState.includes('in operation') || d.burnerState.includes('home run')) && hasModulation;
+      const isBurnerActive = (d.burnerState.includes('In operation') || d.burnerState.includes('home run')) && hasModulation;
       
       return (isBurnerActive && isDhwPumpOff) ? 1 : 0;
     });
@@ -401,7 +401,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
              
                 const data = sampledData[i];
                 const isDhwPumpOff = data.dhwPump === 'Off' || data.dhwPump === '' || data.dhwPump !== 'On';
-                const isBurnerActive = data.burnerState.includes('in operation') || data.burnerState.includes('home run');
+                const isBurnerActive = data.burnerState.includes('In operation') || data.burnerState.includes('home run');
                 const hasModulation = data.boilerModulation && data.boilerModulation !== '----';
                 
                 if (houseHeatingActivity[i] === 1) {
