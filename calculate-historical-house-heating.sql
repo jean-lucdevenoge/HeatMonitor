@@ -21,15 +21,19 @@ SELECT
   -- Only when burner is on AND DHW pump is off (house heating mode)
   COALESCE(SUM(
     CASE
-      WHEN burner_state = 'on' AND (dhw_pump = 'off' OR dhw_pump = '' OR dhw_pump IS NULL)
-      THEN (10.0 * CAST(REPLACE(NULLIF(boiler_modulation, ''), '%', '') AS NUMERIC) / 100.0) / 60.0
+      WHEN burner_state = 'In operation'
+      AND (dhw_pump = 'Off' OR dhw_pump = 'off' OR dhw_pump = '' OR dhw_pump IS NULL)
+      AND boiler_modulation NOT IN ('----', '')
+      THEN (10.0 * CAST(REPLACE(REPLACE(NULLIF(boiler_modulation, ''), '%', ''), '----', '0') AS NUMERIC) / 100.0) / 60.0
       ELSE 0
     END
   ), 0) as house_heating_energy_kwh,
   -- Count active minutes (burner on + DHW pump off)
   COALESCE(SUM(
     CASE
-      WHEN burner_state = 'on' AND (dhw_pump = 'off' OR dhw_pump = '' OR dhw_pump IS NULL)
+      WHEN burner_state = 'In operation'
+      AND (dhw_pump = 'Off' OR dhw_pump = 'off' OR dhw_pump = '' OR dhw_pump IS NULL)
+      AND boiler_modulation NOT IN ('----', '')
       THEN 1
       ELSE 0
     END
@@ -44,8 +48,10 @@ SELECT
   -- Average boiler modulation when house heating is active
   AVG(
     CASE
-      WHEN burner_state = 'on' AND (dhw_pump = 'off' OR dhw_pump = '' OR dhw_pump IS NULL)
-      THEN CAST(REPLACE(NULLIF(boiler_modulation, ''), '%', '') AS NUMERIC)
+      WHEN burner_state = 'In operation'
+      AND (dhw_pump = 'Off' OR dhw_pump = 'off' OR dhw_pump = '' OR dhw_pump IS NULL)
+      AND boiler_modulation NOT IN ('----', '')
+      THEN CAST(REPLACE(REPLACE(NULLIF(boiler_modulation, ''), '%', ''), '----', '0') AS NUMERIC)
       ELSE NULL
     END
   ) as avg_boiler_modulation,

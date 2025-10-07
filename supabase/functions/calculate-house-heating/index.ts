@@ -69,18 +69,21 @@ Deno.serve(async (req: Request) => {
 
       const dayCalc = dailyCalculations.get(dateStr);
 
-      const burnerActive = point.burner_state === "on";
-      const dhwPumpOff = point.dhw_pump === "off" || point.dhw_pump === "";
+      const burnerActive = point.burner_state === "In operation";
+      const dhwPumpOff = point.dhw_pump === "Off" || point.dhw_pump === "off" || point.dhw_pump === "" || point.dhw_pump === null;
       const isHouseHeating = burnerActive && dhwPumpOff;
 
       if (isHouseHeating) {
-        const boilerModulation = parseFloat(point.boiler_modulation) || 0;
-        const powerKw = (10 * boilerModulation) / 100;
-        const energyKwh = (powerKw * 1) / 60;
+        const modStr = point.boiler_modulation?.toString().replace('%', '').trim() || "0";
+        if (modStr !== "----" && modStr !== "") {
+          const boilerModulation = parseFloat(modStr) || 0;
+          const powerKw = (10 * boilerModulation) / 100;
+          const energyKwh = (powerKw * 1) / 60;
 
-        dayCalc.total_energy += energyKwh;
-        dayCalc.active_minutes += 1;
-        dayCalc.boiler_modulations.push(boilerModulation);
+          dayCalc.total_energy += energyKwh;
+          dayCalc.active_minutes += 1;
+          dayCalc.boiler_modulations.push(boilerModulation);
+        }
       }
 
       dayCalc.flow_temps.push(point.flow_temp || 0);
