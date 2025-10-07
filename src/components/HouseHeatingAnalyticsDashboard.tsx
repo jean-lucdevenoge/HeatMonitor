@@ -35,7 +35,6 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
   const { t } = useLanguage();
   const [heatingData, setHeatingData] = useState<HouseHeatingCalculation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof HouseHeatingCalculation>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -57,28 +56,6 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
       setError('Failed to load house heating calculations');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleCalculate = async () => {
-    setIsCalculating(true);
-    setError(null);
-    try {
-      console.log('Starting house heating calculations...');
-
-      const result = await HouseHeatingCalculationsService.calculateFromHeatingData();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to calculate house heating data');
-      }
-
-      console.log(`Calculation completed: ${result.count} days calculated`);
-      await loadHeatingData();
-    } catch (err) {
-      console.error('Error calculating house heating data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to calculate house heating data');
-    } finally {
-      setIsCalculating(false);
     }
   };
 
@@ -342,28 +319,9 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <Flame className="w-8 h-8 text-red-600" />
-              <h2 className="text-3xl font-bold text-gray-900">{t('houseHeating.title')}</h2>
-            </div>
-            <button
-              onClick={handleCalculate}
-              disabled={isCalculating}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isCalculating ? (
-                <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                  <span>Calculating...</span>
-                </>
-              ) : (
-                <>
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Calculate Data</span>
-                </>
-              )}
-            </button>
+          <div className="flex items-center space-x-3 mb-4">
+            <Flame className="w-8 h-8 text-red-600" />
+            <h2 className="text-3xl font-bold text-gray-900">{t('houseHeating.title')}</h2>
           </div>
           <p className="text-gray-600">{t('houseHeating.subtitle')}</p>
         </div>
