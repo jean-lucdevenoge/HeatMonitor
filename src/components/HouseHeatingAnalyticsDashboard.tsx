@@ -124,9 +124,9 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     return 0;
   });
 
-  const totalHeatingEnergy = heatingData.reduce((sum, day) => sum + day.house_heating_energy_kwh, 0);
+  const totalHeatingEnergy = heatingData.reduce((sum, day) => sum + (day.house_heating_energy_kwh ?? 0), 0);
   const avgDailyEnergy = heatingData.length > 0 ? totalHeatingEnergy / heatingData.length : 0;
-  const totalActiveHours = heatingData.reduce((sum, day) => sum + day.house_heating_active_minutes / 60, 0);
+  const totalActiveHours = heatingData.reduce((sum, day) => sum + ((day.house_heating_active_minutes ?? 0) / 60), 0);
   const avgActiveHoursPerDay = heatingData.length > 0 ? totalActiveHours / heatingData.length : 0;
 
   const chartLabels = heatingData.map(day => {
@@ -143,7 +143,7 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     datasets: [
       {
         label: t('houseHeating.heatingEnergy'),
-        data: heatingData.map(day => day.house_heating_energy_kwh),
+        data: heatingData.map(day => day.house_heating_energy_kwh ?? 0),
         borderColor: '#DC2626',
         backgroundColor: 'rgba(220, 38, 38, 0.1)',
         borderWidth: 2,
@@ -158,7 +158,7 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     datasets: [
       {
         label: t('houseHeating.heatingEnergy'),
-        data: heatingData.map(day => day.house_heating_energy_kwh),
+        data: heatingData.map(day => day.house_heating_energy_kwh ?? 0),
         backgroundColor: '#DC2626',
         borderColor: '#B91C1C',
         borderWidth: 1,
@@ -171,7 +171,7 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     datasets: [
       {
         label: t('houseHeating.avgFlowTemp'),
-        data: heatingData.map(day => day.avg_flow_temp),
+        data: heatingData.map(day => day.avg_flow_temp ?? 0),
         borderColor: '#F59E0B',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         borderWidth: 1,
@@ -179,7 +179,7 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
       },
       {
         label: t('houseHeating.avgOutsideTemp'),
-        data: heatingData.map(day => day.avg_outside_temp),
+        data: heatingData.map(day => day.avg_outside_temp ?? 0),
         borderColor: '#3B82F6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 1,
@@ -193,7 +193,7 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     datasets: [
       {
         label: t('houseHeating.activeHours'),
-        data: heatingData.map(day => day.house_heating_active_minutes / 60),
+        data: heatingData.map(day => (day.house_heating_active_minutes ?? 0) / 60),
         backgroundColor: '#DC2626',
         borderColor: '#B91C1C',
         borderWidth: 1,
@@ -515,20 +515,20 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center">
                         <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                        {day.house_heating_energy_kwh.toFixed(2)}
+                        {(day.house_heating_energy_kwh ?? 0).toFixed(2)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {day.house_heating_active_minutes}
+                      {day.house_heating_active_minutes ?? 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {day.avg_flow_temp.toFixed(1)}
+                      {(day.avg_flow_temp ?? 0).toFixed(1)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {day.avg_outside_temp.toFixed(1)}
+                      {(day.avg_outside_temp ?? 0).toFixed(1)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {day.avg_boiler_modulation.toFixed(1)}%
+                      {(day.avg_boiler_modulation ?? 0).toFixed(1)}%
                     </td>
                   </tr>
                 ))}
