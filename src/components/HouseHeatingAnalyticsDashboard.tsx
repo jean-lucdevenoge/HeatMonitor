@@ -49,13 +49,48 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     try {
       console.log('Loading house heating calculations from database...');
       const data = await HouseHeatingCalculationsService.getAllCalculations();
-      setHeatingData(data);
-      console.log('House heating calculations loaded successfully:', data.length, 'records');
+
+      if (data.length === 0) {
+        console.log('No house heating calculations found. Triggering calculation...');
+        await triggerCalculation();
+        const newData = await HouseHeatingCalculationsService.getAllCalculations();
+        setHeatingData(newData);
+        console.log('House heating calculations loaded successfully:', newData.length, 'records');
+      } else {
+        setHeatingData(data);
+        console.log('House heating calculations loaded successfully:', data.length, 'records');
+      }
     } catch (err) {
       console.error('Error loading house heating calculations:', err);
       setError('Failed to load house heating calculations');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const triggerCalculation = async () => {
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calculate-house-heating`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      console.log('Calling calculate-house-heating edge function...');
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to trigger calculation: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Calculation completed:', result);
+    } catch (error) {
+      console.error('Error triggering calculation:', error);
+      throw error;
     }
   };
 
