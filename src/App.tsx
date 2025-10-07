@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { HouseHeatingAnalyticsDashboard } from './components/HouseHeatingAnalyticsDashboard';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { DataProvider } from './contexts/DataContext';
 
@@ -14,6 +15,8 @@ function App() {
         return <Dashboard />;
       case 'analytics':
         return <AnalyticsDashboard />;
+      case 'houseHeating':
+        return <HouseHeatingAnalyticsDashboard />;
       case 'files':
         return (
           <div className="min-h-screen bg-gray-50 flex items-center justify-center">

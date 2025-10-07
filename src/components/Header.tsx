@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Settings, BarChart3, FileText } from 'lucide-react';
+import { Home, Settings, BarChart3, FileText, Flame } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -14,6 +14,7 @@ export const Header: React.FC<HeaderProps> = ({ onSectionChange, activeSection }
   const navItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: Home },
     { id: 'analytics', label: t('nav.analytics'), icon: BarChart3 },
+    { id: 'houseHeating', label: t('nav.houseHeating'), icon: Flame },
     { id: 'files', label: t('nav.files'), icon: FileText },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ];

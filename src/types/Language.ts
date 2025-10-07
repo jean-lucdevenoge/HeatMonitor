@@ -952,5 +952,127 @@ export const translations: Translations = {
     en: 'Monthly Energy Breakdown',
     de: 'Monatliche Energieaufschlüsselung',
     fr: 'Répartition énergétique mensuelle'
+  },
+
+  // House Heating Analytics
+  'nav.houseHeating': {
+    en: 'House Heating',
+    de: 'Hausheizung',
+    fr: 'Chauffage maison'
+  },
+  'houseHeating.title': {
+    en: 'House Heating Analytics',
+    de: 'Hausheizungs-Analytik',
+    fr: 'Analytique chauffage maison'
+  },
+  'houseHeating.subtitle': {
+    en: 'Daily house heating calculations and performance metrics',
+    de: 'Tägliche Hausheizungsberechnungen und Leistungsmetriken',
+    fr: 'Calculs quotidiens de chauffage maison et métriques de performance'
+  },
+  'houseHeating.totalEnergy': {
+    en: 'Total Heating Energy',
+    de: 'Gesamte Heizenergie',
+    fr: 'Énergie totale de chauffage'
+  },
+  'houseHeating.avgDailyEnergy': {
+    en: 'Avg Daily Energy',
+    de: 'Durchschn. tägliche Energie',
+    fr: 'Énergie quotidienne moyenne'
+  },
+  'houseHeating.avgActiveHours': {
+    en: 'Avg Active Hours',
+    de: 'Durchschn. Aktivstunden',
+    fr: 'Heures actives moyennes'
+  },
+  'houseHeating.totalActiveHours': {
+    en: 'Total Active Hours',
+    de: 'Gesamte Aktivstunden',
+    fr: 'Heures actives totales'
+  },
+  'houseHeating.total': {
+    en: 'total',
+    de: 'gesamt',
+    fr: 'total'
+  },
+  'houseHeating.energyTrends': {
+    en: 'House Heating Energy Trends',
+    de: 'Hausheizungs-Energietrends',
+    fr: 'Tendances énergétiques chauffage maison'
+  },
+  'houseHeating.dailyEnergyBreakdown': {
+    en: 'Daily Energy Breakdown',
+    de: 'Tägliche Energieaufschlüsselung',
+    fr: 'Répartition énergétique quotidienne'
+  },
+  'houseHeating.temperatureTrends': {
+    en: 'Temperature Trends',
+    de: 'Temperaturtrends',
+    fr: 'Tendances de température'
+  },
+  'houseHeating.dailyActivity': {
+    en: 'Daily Activity Time',
+    de: 'Tägliche Aktivitätszeit',
+    fr: 'Temps d\'activité quotidien'
+  },
+  'houseHeating.dailyCalculations': {
+    en: 'Daily House Heating Calculations',
+    de: 'Tägliche Hausheizungsberechnungen',
+    fr: 'Calculs quotidiens de chauffage maison'
+  },
+  'houseHeating.heatingEnergy': {
+    en: 'House Heating Energy',
+    de: 'Hausheizungsenergie',
+    fr: 'Énergie chauffage maison'
+  },
+  'houseHeating.activeHours': {
+    en: 'Active Hours',
+    de: 'Aktivstunden',
+    fr: 'Heures actives'
+  },
+  'houseHeating.avgFlowTemp': {
+    en: 'Avg Flow Temp',
+    de: 'Durchschn. Vorlauftemp.',
+    fr: 'Temp. départ moyenne'
+  },
+  'houseHeating.avgOutsideTemp': {
+    en: 'Avg Outside Temp',
+    de: 'Durchschn. Außentemp.',
+    fr: 'Temp. extérieure moyenne'
+  },
+  'houseHeating.energyKwh': {
+    en: 'Energy (kWh)',
+    de: 'Energie (kWh)',
+    fr: 'Énergie (kWh)'
+  },
+  'houseHeating.activeMinutes': {
+    en: 'Active (min)',
+    de: 'Aktiv (min)',
+    fr: 'Actif (min)'
+  },
+  'houseHeating.avgFlowTempC': {
+    en: 'Avg Flow (°C)',
+    de: 'Durchschn. Vorlauf (°C)',
+    fr: 'Départ moy. (°C)'
+  },
+  'houseHeating.avgOutsideTempC': {
+    en: 'Avg Outside (°C)',
+    de: 'Durchschn. Außen (°C)',
+    fr: 'Extérieur moy. (°C)'
+  },
+  'houseHeating.avgModulation': {
+    en: 'Avg Modulation (%)',
+    de: 'Durchschn. Modulation (%)',
+    fr: 'Modulation moy. (%)'
+  },
+  'houseHeating.noData': {
+    en: 'No House Heating Data Available',
+    de: 'Keine Hausheizungsdaten verfügbar',
+    fr: 'Aucune donnée de chauffage maison disponible'
+  },
+  'houseHeating.noDataDesc': {
+    en: 'House heating calculations will appear here once data is processed.',
+    de: 'Hausheizungsberechnungen werden hier angezeigt, sobald die Daten verarbeitet sind.',
+    fr: 'Les calculs de chauffage maison apparaîtront ici une fois les données traitées.'
   }
 };
