@@ -129,6 +129,123 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
   const totalActiveHours = heatingData.reduce((sum, day) => sum + ((day.house_heating_active_minutes ?? 0) / 60), 0);
   const avgActiveHoursPerDay = heatingData.length > 0 ? totalActiveHours / heatingData.length : 0;
 
+  // Group data by month
+  interface MonthlyData {
+    month: string;
+    energy: number;
+    activeHours: number;
+    avgFlowTemp: number;
+    avgOutsideTemp: number;
+    daysCount: number;
+  }
+
+  const monthlyData: { [key: string]: MonthlyData } = {};
+
+  heatingData.forEach(day => {
+    try {
+      const date = new Date(day.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: monthKey,
+          energy: 0,
+          activeHours: 0,
+          avgFlowTemp: 0,
+          avgOutsideTemp: 0,
+          daysCount: 0,
+        };
+      }
+
+      monthlyData[monthKey].energy += day.house_heating_energy_kwh ?? 0;
+      monthlyData[monthKey].activeHours += (day.house_heating_active_minutes ?? 0) / 60;
+      monthlyData[monthKey].avgFlowTemp += day.avg_flow_temp ?? 0;
+      monthlyData[monthKey].avgOutsideTemp += day.avg_outside_temp ?? 0;
+      monthlyData[monthKey].daysCount += 1;
+    } catch (error) {
+      console.error('Error processing date:', day.date, error);
+    }
+  });
+
+  // Calculate averages for temperatures
+  Object.keys(monthlyData).forEach(key => {
+    const data = monthlyData[key];
+    if (data.daysCount > 0) {
+      data.avgFlowTemp = data.avgFlowTemp / data.daysCount;
+      data.avgOutsideTemp = data.avgOutsideTemp / data.daysCount;
+    }
+  });
+
+  const sortedMonthlyData = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+
+  const monthlyLabels = sortedMonthlyData.map(data => {
+    try {
+      const [year, month] = data.month.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    } catch {
+      return data.month;
+    }
+  });
+
+  const monthlyEnergyData = {
+    labels: monthlyLabels,
+    datasets: [
+      {
+        label: t('houseHeating.heatingEnergy'),
+        data: sortedMonthlyData.map(data => data.energy),
+        backgroundColor: '#DC2626',
+        borderColor: '#B91C1C',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const monthlyActivityData = {
+    labels: monthlyLabels,
+    datasets: [
+      {
+        label: t('houseHeating.activeHours'),
+        data: sortedMonthlyData.map(data => data.activeHours),
+        backgroundColor: '#DC2626',
+        borderColor: '#B91C1C',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const monthlyTemperatureData = {
+    labels: monthlyLabels,
+    datasets: [
+      {
+        label: t('houseHeating.avgFlowTemp'),
+        data: sortedMonthlyData.map(data => data.avgFlowTemp),
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        borderWidth: 1,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#F59E0B',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
+      },
+      {
+        label: t('houseHeating.avgOutsideTemp'),
+        data: sortedMonthlyData.map(data => data.avgOutsideTemp),
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 1,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#3B82F6',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
+      },
+    ],
+  };
+
   const chartLabels = heatingData.map(day => {
     try {
       const date = new Date(day.date);
@@ -431,6 +548,33 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
               </div>
               <div style={{ height: '400px' }}>
                 <Line data={energyTrendData} options={lineChartOptions} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <BarChart3 className="w-6 h-6 text-red-600" />
+                <h3 className="text-xl font-bold text-gray-900">Monthly Statistics</h3>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Energy Consumption</h4>
+                  <div style={{ height: '300px' }}>
+                    <Bar data={monthlyEnergyData} options={barChartOptions} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Active Hours</h4>
+                  <div style={{ height: '300px' }}>
+                    <Bar data={monthlyActivityData} options={activityChartOptions} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Temperature Averages</h4>
+                  <div style={{ height: '300px' }}>
+                    <Line data={monthlyTemperatureData} options={temperatureChartOptions} />
+                  </div>
+                </div>
               </div>
             </div>
 
