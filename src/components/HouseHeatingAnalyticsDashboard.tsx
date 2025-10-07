@@ -64,25 +64,15 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     setIsCalculating(true);
     setError(null);
     try {
-      console.log('Triggering house heating calculations...');
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      console.log('Starting house heating calculations...');
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/calculate-house-heating`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const result = await HouseHeatingCalculationsService.calculateFromHeatingData();
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to calculate house heating data');
       }
 
-      console.log('Calculation result:', result);
+      console.log(`Calculation completed: ${result.count} days calculated`);
       await loadHeatingData();
     } catch (err) {
       console.error('Error calculating house heating data:', err);
