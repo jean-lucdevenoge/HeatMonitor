@@ -19,6 +19,7 @@ import 'chartjs-adapter-date-fns';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useData } from '../contexts/DataContext';
 import { EnergyCalculationsService } from '../services/energyCalculationsService';
+import { MonthlyEnergyChart } from './MonthlyEnergyChart';
 
 ChartJS.register(
   CategoryScale,
@@ -494,6 +495,9 @@ export const AnalyticsDashboard: React.FC = () => {
         {/* Charts Section */}
         {energyData.length > 0 && (
           <div className="space-y-8">
+            {/* Monthly Energy Chart */}
+            <MonthlyEnergyChart energyData={energyData} />
+
             {/* Energy Trends Chart */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center space-x-3 mb-6">

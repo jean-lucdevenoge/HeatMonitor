@@ -947,5 +947,10 @@ export const translations: Translations = {
     en: 'Gas Active (minutes)',
     de: 'Gas aktiv (Minuten)',
     fr: 'Gaz actif (minutes)'
+  },
+  'analytics.monthlyEnergyBreakdown': {
+    en: 'Monthly Energy Breakdown',
+    de: 'Monatliche Energieaufschlüsselung',
+    fr: 'Répartition énergétique mensuelle'
   }
 };
