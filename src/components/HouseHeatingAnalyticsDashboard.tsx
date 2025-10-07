@@ -146,9 +146,11 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
         data: heatingData.map(day => day.house_heating_energy_kwh ?? 0),
         borderColor: '#DC2626',
         backgroundColor: 'rgba(220, 38, 38, 0.1)',
-        borderWidth: 2,
+        borderWidth: 1,
         tension: 0.4,
         fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 4,
       },
     ],
   };
@@ -176,6 +178,8 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         borderWidth: 1,
         tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 4,
       },
       {
         label: t('houseHeating.avgOutsideTemp'),
@@ -184,6 +188,8 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 1,
         tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 4,
       },
     ],
   };
