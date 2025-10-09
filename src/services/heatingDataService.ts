@@ -261,15 +261,15 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   static async insertData(dataPoints: HeatingDataPoint[]): Promise<{ inserted: number; duplicates: number }> {
     try {
       console.log(`Inserting ${dataPoints.length} data points...`);
-      
+
       // Convert to database format
       const dbRows = dataPoints.map(this.dataPointToDbRow);
-      
+
       const { data, error } = await supabase
         .from('heating_data')
         .upsert(dbRows, {
           onConflict: 'date,time',
-          ignoreDuplicates: true 
+          ignoreDuplicates: true
         })
         .select('id');
 
@@ -282,10 +282,57 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
       const duplicates = dataPoints.length - inserted;
 
       console.log(`Inserted ${inserted} new records, ${duplicates} duplicates skipped`);
-      
+
+      // Trigger house heating calculations after successful insert
+      if (inserted > 0) {
+        console.log('Triggering house heating calculations...');
+        try {
+          await this.triggerHouseHeatingCalculations();
+          console.log('House heating calculations triggered successfully');
+        } catch (calcError) {
+          console.error('Error triggering house heating calculations:', calcError);
+          // Don't fail the entire import if calculations fail
+        }
+      }
+
       return { inserted, duplicates };
     } catch (error) {
       console.error('Error in insertData:', error);
+      throw error;
+    }
+  }
+
+  // Trigger house heating calculations
+  static async triggerHouseHeatingCalculations(): Promise<void> {
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase credentials not configured');
+      }
+
+      const functionUrl = `${supabaseUrl}/functions/v1/calculate-house-heating`;
+
+      console.log('Calling house heating calculation function...');
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to trigger calculations: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('House heating calculations result:', result);
+    } catch (error) {
+      console.error('Error triggering house heating calculations:', error);
       throw error;
     }
   }
