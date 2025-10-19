@@ -195,9 +195,9 @@ serve(async (req) => {
                   console.log(`✅ Successfully inserted ${inserted} new records from ${csvAttachment.filename}`)
                   importedCount += inserted
                   
-                  // Calculate energy for the date from the CSV filename
+                  // Calculate energy and house heating for the imported dates
                   if (inserted > 0) {
-                    console.log(`🔋 Calculating energy for CSV file: ${csvAttachment.filename}`)
+                    console.log(`🔋 Calculating energy and house heating for CSV file: ${csvAttachment.filename}`)
                     await calculateEnergyForCsvData(supabaseClient, parsedData)
                   }
                 }
@@ -600,7 +600,27 @@ async function calculateEnergyForCsvData(supabaseClient: any, parsedData: any[])
     // Calculate energy for each unique date
     for (const csvDate of uniqueDates) {
       await calculateEnergyForDate(supabaseClient, csvDate)
-      await calculateHouseHeatingForDate(supabaseClient, csvDate)
+    }
+
+    // Calculate house heating for all dates using SQL function
+    if (uniqueDates.length > 0) {
+      const minDate = uniqueDates[0]
+      const maxDate = uniqueDates[uniqueDates.length - 1]
+      console.log(`🏠 Calculating house heating for date range: ${minDate} to ${maxDate}`)
+
+      const { data: daysCalculated, error: calcError } = await supabaseClient.rpc(
+        'calculate_house_heating_for_date_range',
+        {
+          date_from: minDate,
+          date_to: maxDate
+        }
+      )
+
+      if (calcError) {
+        console.error('❌ Error calculating house heating:', calcError)
+      } else {
+        console.log(`✅ Successfully calculated house heating for ${daysCalculated} days`)
+      }
     }
 
   } catch (error) {
@@ -908,152 +928,3 @@ async function calculateEnergyForDate(supabaseClient: any, csvDate: string) {
   }
 }
 
-// Function to calculate house heating for a specific date
-async function calculateHouseHeatingForDate(supabaseClient: any, csvDate: string) {
-  try {
-    console.log(`🏠 Starting house heating calculation for date: ${csvDate}`)
-
-    // Check if house heating calculation already exists for this date
-    const { data: existingCalc, error: existingError } = await supabaseClient
-      .from('house_heating_calculations')
-      .select('id')
-      .eq('date', csvDate)
-      .single()
-
-    if (existingError && existingError.code !== 'PGRST116') {
-      console.error('❌ Error checking existing house heating calculations:', existingError)
-      throw existingError
-    }
-
-    if (existingCalc) {
-      console.log(`⏭️ House heating calculation already exists for ${csvDate}, skipping`)
-      return
-    }
-
-    // Get heating data for this specific date
-    const { data: dayData, error: fetchError } = await supabaseClient
-      .from('heating_data')
-      .select('*')
-      .eq('date', csvDate)
-      .order('time')
-
-    if (fetchError) {
-      console.error('❌ Error fetching heating data:', fetchError)
-      throw fetchError
-    }
-
-    if (!dayData || dayData.length === 0) {
-      console.log(`❌ No heating data found for date ${csvDate}`)
-      return
-    }
-
-    console.log(`📊 Found ${dayData.length} data points for ${csvDate}`)
-
-    // Initialize house heating calculations
-    let houseHeatingEnergyKwh = 0
-    let houseHeatingActiveMinutes = 0
-    const flowTemps = []
-    const returnTemps = []
-    const outsideTemps = []
-    const boilerModulations = []
-    let maxBurnerStarts = 0
-
-    // Calculate house heating for each data point (1-minute intervals)
-    const intervalHours = 1 / 60 // 0.0167 hours per minute
-
-    dayData.forEach((record) => {
-      // House heating = burner on AND DHW pump off
-      const burnerActive = record.burner_state === 'on'
-      const dhwPumpOff = !record.dhw_pump || record.dhw_pump === 'off' || record.dhw_pump === ''
-      const isHouseHeating = burnerActive && dhwPumpOff
-
-      if (isHouseHeating) {
-        houseHeatingActiveMinutes++
-        const boilerModulation = String(record.boiler_modulation || '')
-
-        if (boilerModulation && boilerModulation !== '----') {
-          const modulationStr = boilerModulation.replace('%', '').trim()
-          const modulation = Number(modulationStr)
-          if (!isNaN(modulation) && modulation > 0) {
-            // House heating power calculation: 10 kW × modulation percentage
-            const powerKw = 10 * (modulation / 100)
-            houseHeatingEnergyKwh += powerKw * intervalHours
-            boilerModulations.push(modulation)
-          }
-        }
-      }
-
-      // Collect temperature data
-      flowTemps.push(Number(record.flow_temp) || 0)
-      returnTemps.push(Number(record.return_temp) || 0)
-      outsideTemps.push(Number(record.outside_temp) || 0)
-
-      // Track burner starts
-      if (record.burner_starts > maxBurnerStarts) {
-        maxBurnerStarts = record.burner_starts
-      }
-    })
-
-    // Calculate averages and extremes
-    const avgFlowTemp = flowTemps.length > 0 ?
-      flowTemps.reduce((sum, t) => sum + t, 0) / flowTemps.length : 0
-    const avgReturnTemp = returnTemps.length > 0 ?
-      returnTemps.reduce((sum, t) => sum + t, 0) / returnTemps.length : 0
-    const avgOutsideTemp = outsideTemps.length > 0 ?
-      outsideTemps.reduce((sum, t) => sum + t, 0) / outsideTemps.length : 0
-    const maxFlowTemp = flowTemps.length > 0 ? Math.max(...flowTemps) : 0
-    const minOutsideTemp = outsideTemps.length > 0 ? Math.min(...outsideTemps) : 0
-    const maxOutsideTemp = outsideTemps.length > 0 ? Math.max(...outsideTemps) : 0
-    const avgBoilerModulation = boilerModulations.length > 0 ?
-      boilerModulations.reduce((sum, m) => sum + m, 0) / boilerModulations.length : 0
-
-    console.log(`=== HOUSE HEATING CALCULATION RESULTS FOR ${csvDate} ===`)
-    console.log(`House heating energy: ${houseHeatingEnergyKwh.toFixed(3)} kWh`)
-    console.log(`House heating active minutes: ${houseHeatingActiveMinutes}`)
-    console.log(`Avg flow temp: ${avgFlowTemp.toFixed(1)}°C`)
-    console.log(`Avg outside temp: ${avgOutsideTemp.toFixed(1)}°C`)
-    console.log(`=== END CALCULATION RESULTS ===`)
-
-    // Create house heating record
-    const houseHeatingRecord = {
-      date: csvDate,
-      house_heating_energy_kwh: Number(houseHeatingEnergyKwh.toFixed(3)),
-      house_heating_active_minutes: houseHeatingActiveMinutes,
-      avg_flow_temp: Number(avgFlowTemp.toFixed(1)),
-      avg_return_temp: Number(avgReturnTemp.toFixed(1)),
-      avg_outside_temp: Number(avgOutsideTemp.toFixed(1)),
-      max_flow_temp: Number(maxFlowTemp.toFixed(1)),
-      min_outside_temp: Number(minOutsideTemp.toFixed(1)),
-      max_outside_temp: Number(maxOutsideTemp.toFixed(1)),
-      avg_boiler_modulation: Number(avgBoilerModulation.toFixed(1)),
-      total_burner_starts: maxBurnerStarts,
-      data_points_count: dayData.length
-    }
-
-    console.log(`💾 Storing house heating data for ${csvDate}:`, {
-      energy: `${houseHeatingRecord.house_heating_energy_kwh} kWh`,
-      activeMinutes: `${houseHeatingActiveMinutes} min`,
-      dataPoints: dayData.length
-    })
-
-    // Insert house heating calculation
-    const { error: insertError } = await supabaseClient
-      .from('house_heating_calculations')
-      .insert(houseHeatingRecord)
-
-    if (insertError) {
-      if (insertError.code === '23505') {
-        console.log(`⚠️ House heating calculation for ${csvDate} already exists, skipping`)
-      } else {
-        console.error(`❌ Error storing house heating data for ${csvDate}:`, insertError)
-        throw insertError
-      }
-    } else {
-      console.log(`✅ Successfully stored house heating data for ${csvDate}`)
-    }
-
-  } catch (error) {
-    console.error(`❌ Error calculating house heating for date ${csvDate}:`, error)
-    throw error
-  }
-}
