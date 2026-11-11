@@ -416,6 +416,11 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
           borderColor: 'rgba(255, 255, 255, 0.2)',
           borderWidth: 1,
           callbacks: {
+            title: (items: any) => {
+              const d = chartLabels[items[0].dataIndex];
+              if (!d) return '';
+              return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            },
             afterTitle: (tooltipItems: any) => {
               const index = tooltipItems[0].dataIndex;
               const isActive = solarActivity[index] === 1;
