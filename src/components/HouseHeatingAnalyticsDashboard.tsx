@@ -343,6 +343,13 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
       tooltip: {
         mode: 'index' as const,
         intersect: false,
+        callbacks: {
+          title: (items: any) => {
+            const day = heatingData[items[0].dataIndex];
+            if (!day) return '';
+            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          },
+        },
       },
     },
     scales: {
@@ -370,6 +377,15 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
       legend: {
         position: 'top' as const,
       },
+      tooltip: {
+        callbacks: {
+          title: (items: any) => {
+            const day = heatingData[items[0].dataIndex];
+            if (!day) return '';
+            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          },
+        },
+      },
     },
     scales: {
       x: {
@@ -394,6 +410,15 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
       legend: {
         position: 'top' as const,
       },
+      tooltip: {
+        callbacks: {
+          title: (items: any) => {
+            const day = heatingData[items[0].dataIndex];
+            if (!day) return '';
+            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          },
+        },
+      },
     },
     scales: {
       x: {
@@ -417,6 +442,15 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     plugins: {
       legend: {
         position: 'top' as const,
+      },
+      tooltip: {
+        callbacks: {
+          title: (items: any) => {
+            const day = heatingData[items[0].dataIndex];
+            if (!day) return '';
+            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          },
+        },
       },
     },
     scales: {
