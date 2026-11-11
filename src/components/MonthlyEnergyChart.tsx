@@ -55,7 +55,7 @@ export const MonthlyEnergyChart: React.FC<MonthlyEnergyChartProps> = ({ energyDa
       const [bYear, bMonth] = b.month.split(' ');
       const aDate = new Date(`${aMonth} 1, ${aYear}`);
       const bDate = new Date(`${bMonth} 1, ${bYear}`);
-      return aDate.getTime() - bDate.getTime();
+      return bDate.getTime() - aDate.getTime();
     });
   };
 

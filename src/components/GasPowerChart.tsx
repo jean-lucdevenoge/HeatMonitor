@@ -391,6 +391,7 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
       scales: {
         x: {
           type: 'time',
+          reverse: true,
           time: { displayFormats: { hour: 'HH:mm', day: 'MMM dd' } },
           grid: { color: 'rgba(0, 0, 0, 0.1)' },
         },

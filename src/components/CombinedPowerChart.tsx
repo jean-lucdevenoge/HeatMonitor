@@ -482,6 +482,7 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
       scales: {
         x: {
           type: 'time',
+          reverse: true,
           time: { displayFormats: { hour: 'HH:mm', day: 'MMM dd' } },
           grid: { color: 'rgba(0, 0, 0, 0.1)' },
         },

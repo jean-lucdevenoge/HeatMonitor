@@ -450,6 +450,7 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
       scales: {
         x: {
           type: 'time',
+          reverse: true,
           time: {
             displayFormats: {
               hour: 'HH:mm',

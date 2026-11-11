@@ -176,7 +176,7 @@ export const HouseHeatingAnalyticsDashboard: React.FC = () => {
     }
   });
 
-  const sortedMonthlyData = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+  const sortedMonthlyData = Object.values(monthlyData).sort((a, b) => b.month.localeCompare(a.month));
 
   const monthlyLabels = sortedMonthlyData.map(data => {
     try {
