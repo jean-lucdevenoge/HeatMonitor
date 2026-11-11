@@ -1,6 +1,31 @@
 import { supabase, HeatingDataRow } from '../lib/supabase';
 import { HeatingDataPoint } from '../types/HeatingData';
 
+async function callDataWrites(action: string, payload: Record<string, unknown> = {}): Promise<any> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase credentials not configured');
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/data-writes`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action, ...payload }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Data write failed: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
+
 export class HeatingDataService {
   // Convert database row to HeatingDataPoint
   private static dbRowToDataPoint(row: HeatingDataRow): HeatingDataPoint {
@@ -265,21 +290,10 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
       // Convert to database format
       const dbRows = dataPoints.map(this.dataPointToDbRow);
 
-      const { data, error } = await supabase
-        .from('heating_data')
-        .upsert(dbRows, {
-          onConflict: 'date,time',
-          ignoreDuplicates: true
-        })
-        .select('id');
+      const result = await callDataWrites('insert-heating-data', { rows: dbRows });
 
-      if (error) {
-        console.error('Error inserting heating data:', error);
-        throw error;
-      }
-
-      const inserted = data?.length || 0;
-      const duplicates = dataPoints.length - inserted;
+      const inserted = result.inserted || 0;
+      const duplicates = result.duplicates || 0;
 
       console.log(`Inserted ${inserted} new records, ${duplicates} duplicates skipped`);
 
@@ -383,16 +397,7 @@ static async getAllData(): Promise<HeatingDataPoint[]> {
   // Delete all data (for testing purposes)
   static async deleteAllData(): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('heating_data')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
-
-      if (error) {
-        console.error('Error deleting all data:', error);
-        throw error;
-      }
-
+      await callDataWrites('delete-heating-data');
       console.log('All heating data deleted');
     } catch (error) {
       console.error('Error in deleteAllData:', error);

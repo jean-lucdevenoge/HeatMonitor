@@ -176,15 +176,26 @@ export class EnergyCalculationsService {
   static async deleteAllCalculations(): Promise<void> {
     try {
       console.log('Deleting all energy calculations...');
-      
-      const { error } = await supabase
-        .from('energy_calculations')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
 
-      if (error) {
-        console.error('Error deleting all energy calculations:', error);
-        throw error;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase credentials not configured');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/data-writes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'delete-energy-calculations' }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete: ${response.status} - ${errorText}`);
       }
 
       console.log('All energy calculations deleted');

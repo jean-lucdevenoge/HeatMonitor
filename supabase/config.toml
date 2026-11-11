@@ -1,0 +1,11 @@
+[functions.calculate-house-heating]
+verify_jwt = false
+
+[functions.daily-data-collection]
+verify_jwt = false
+
+[functions.nightly-email-import]
+verify_jwt = false
+
+[functions.data-writes]
+verify_jwt = false

@@ -123,22 +123,32 @@ export class HouseHeatingCalculationsService {
 
       console.log(`Calculated ${calculationsToInsert.length} daily house heating records`);
 
-      // Insert in batches to avoid timeouts
+      // Insert in batches via edge function
       const batchSize = 100;
       let totalInserted = 0;
 
       for (let i = 0; i < calculationsToInsert.length; i += batchSize) {
         const batch = calculationsToInsert.slice(i, i + batchSize);
 
-        const { error: insertError } = await supabase
-          .from('house_heating_calculations')
-          .upsert(batch, {
-            onConflict: 'date',
-          });
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-        if (insertError) {
-          console.error('Error inserting batch:', insertError);
-          return { success: false, count: totalInserted, error: insertError.message };
+        if (!supabaseUrl || !supabaseAnonKey) {
+          throw new Error('Supabase credentials not configured');
+        }
+
+        const response = await fetch(`${supabaseUrl}/functions/v1/data-writes`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'upsert-house-heating-calculations', rows: batch }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to insert batch: ${response.status} - ${errorText}`);
         }
 
         totalInserted += batch.length;
