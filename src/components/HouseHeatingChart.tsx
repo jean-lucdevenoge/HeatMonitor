@@ -54,8 +54,8 @@ const houseHeatingBackgroundPlugin: Plugin<'line'> = {
     let activeStartX: number | null = null;
 
     const drawSpan = (x0: number, x1: number) => {
-      const left = Math.max(chartArea.left, x0);
-      const right = Math.min(chartArea.right, x1);
+      const left = Math.max(chartArea.left, Math.min(x0, x1));
+      const right = Math.min(chartArea.right, Math.max(x0, x1));
       if (right > left) {
         ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // blue-500 @ 0.2
         ctx.fillRect(left, chartArea.top, right - left, chartArea.height);
@@ -75,7 +75,9 @@ const houseHeatingBackgroundPlugin: Plugin<'line'> = {
       }
     }
     if (activeStartX !== null) {
-      drawSpan(activeStartX, chartArea.right);
+      const firstX = scales.x.getPixelForValue(labels[0].getTime());
+      const lastX = scales.x.getPixelForValue(labels[labels.length - 1].getTime());
+      drawSpan(activeStartX, firstX > lastX ? chartArea.left : chartArea.right);
     }
 
     ctx.restore();

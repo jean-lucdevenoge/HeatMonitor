@@ -55,8 +55,8 @@ const gasBackgroundPlugin: Plugin<'line'> = {
     let startX: number | null = null;
 
     const drawRect = (x0: number, x1: number) => {
-      const left = Math.max(chartArea.left, x0);
-      const right = Math.min(chartArea.right, x1);
+      const left = Math.max(chartArea.left, Math.min(x0, x1));
+      const right = Math.min(chartArea.right, Math.max(x0, x1));
       if (right > left) {
         ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'; // red @ 20%
         ctx.fillRect(left, chartArea.top, right - left, chartArea.height);
@@ -75,7 +75,11 @@ const gasBackgroundPlugin: Plugin<'line'> = {
         startX = null;
       }
     }
-    if (startX !== null) drawRect(startX, chartArea.right);
+    if (startX !== null) {
+      const firstX = scales.x.getPixelForValue(labels[0].getTime());
+      const lastX = scales.x.getPixelForValue(labels[labels.length - 1].getTime());
+      drawRect(startX, firstX > lastX ? chartArea.left : chartArea.right);
+    }
 
     ctx.restore();
   },
