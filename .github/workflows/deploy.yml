@@ -30,7 +30,7 @@ jobs:
           VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
 
       - name: Copy .htaccess to dist
-        run: cp .htaccess dist/.htaccess
+        run: cp -f .htaccess dist/.htaccess 2>/dev/null || true
 
       - name: Deploy to Hostpoint via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
