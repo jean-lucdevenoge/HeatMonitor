@@ -12,6 +12,7 @@ import {
   ChartOptions,
   Plugin,
   Filler,
+  Decimation,
 } from 'chart.js';
 import { getRelativePosition } from 'chart.js/helpers';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -30,7 +31,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   zoomPlugin,
-  Filler
+  Filler,
+  Decimation
 );
 
 interface GasPowerChartProps {
@@ -64,14 +66,11 @@ const gasBackgroundPlugin: Plugin<'line'> = {
     };
 
     for (let i = 0; i < labels.length; i++) {
-      const t = labels[i].getTime();
-      const x = scales.x.getPixelForValue(t);
       const isActive = activity[i] === 1;
-
       if (isActive && startX === null) {
-        startX = x;
+        startX = scales.x.getPixelForValue(labels[i].getTime());
       } else if (!isActive && startX !== null) {
-        drawRect(startX, x);
+        drawRect(startX, scales.x.getPixelForValue(labels[i].getTime()));
         startX = null;
       }
     }
@@ -343,6 +342,8 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
+      normalized: true,
       onClick: handleChartClick,
       interaction: { intersect: false, mode: 'index' },
       plugins: {
@@ -382,6 +383,11 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
           activity: gasActivity // number[] 0/1
         },
 
+        decimation: {
+          enabled: true,
+          algorithm: 'min-max',
+          samples: 500,
+        },
         zoom: {
           zoom: {
             wheel: { enabled: !isMarkingMode },

@@ -12,6 +12,7 @@ import {
   ChartOptions,
   Plugin,
   Filler,
+  Decimation,
 } from 'chart.js';
 import { getRelativePosition } from 'chart.js/helpers';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -30,7 +31,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   zoomPlugin,
-  Filler
+  Filler,
+  Decimation
 );
 
 interface SolarActivityChartProps {
@@ -63,14 +65,11 @@ const solarBackgroundPlugin: Plugin<'line'> = {
 
     let activeStartX: number | null = null;
     for (let i = 0; i < labels.length; i++) {
-      const t = labels[i].getTime();
-      const x = scales.x.getPixelForValue(t);
       const isActive = activity[i] === 1;
-
       if (isActive && activeStartX === null) {
-        activeStartX = x;
+        activeStartX = scales.x.getPixelForValue(labels[i].getTime());
       } else if (!isActive && activeStartX !== null) {
-        drawSpan(activeStartX, x);
+        drawSpan(activeStartX, scales.x.getPixelForValue(labels[i].getTime()));
         activeStartX = null;
       }
     }
@@ -251,6 +250,8 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
+      normalized: true,
       onClick: handleChartClick,
       interaction: {
         intersect: false,
@@ -299,6 +300,11 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
           activity: solarActivity, // number[] of 0/1
         },
 
+        decimation: {
+          enabled: true,
+          algorithm: 'min-max',
+          samples: 500,
+        },
         zoom: {
           zoom: {
             wheel: { enabled: !isMarkingMode },

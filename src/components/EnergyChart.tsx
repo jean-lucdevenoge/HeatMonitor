@@ -12,6 +12,7 @@ import {
   ChartOptions,
   Plugin,
   Filler,
+  Decimation,
 } from 'chart.js';
 import { getRelativePosition } from 'chart.js/helpers';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -30,7 +31,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   zoomPlugin,
-  Filler
+  Filler,
+  Decimation
 );
 
 interface EnergyChartProps {
@@ -64,14 +66,11 @@ const solarBackgroundPlugin: Plugin<'line'> = {
     };
 
     for (let i = 0; i < labels.length; i++) {
-      const t = labels[i].getTime();
-      const x = scales.x.getPixelForValue(t);
       const isActive = activity[i] === 1;
-
       if (isActive && activeStartX === null) {
-        activeStartX = x;
+        activeStartX = scales.x.getPixelForValue(labels[i].getTime());
       } else if (!isActive && activeStartX !== null) {
-        drawSpan(activeStartX, x);
+        drawSpan(activeStartX, scales.x.getPixelForValue(labels[i].getTime()));
         activeStartX = null;
       }
     }
@@ -389,6 +388,8 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
+      normalized: true,
       onClick: handleChartClick,
       interaction: {
         intersect: false,
@@ -435,6 +436,11 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
           activity: solarActivity,  // number[] (0/1)
         },
 
+        decimation: {
+          enabled: true,
+          algorithm: 'min-max',
+          samples: 500,
+        },
         zoom: {
           zoom: {
             wheel: { enabled: !isMarkingMode },

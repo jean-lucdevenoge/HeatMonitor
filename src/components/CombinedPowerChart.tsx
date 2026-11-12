@@ -12,6 +12,7 @@ import {
   ChartOptions,
   Plugin,
   Filler,
+  Decimation,
 } from 'chart.js';
 import { getRelativePosition } from 'chart.js/helpers';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -30,7 +31,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   zoomPlugin,
-  Filler
+  Filler,
+  Decimation
 );
 
 interface CombinedPowerChartProps {
@@ -66,14 +68,11 @@ const activityBackgroundPlugin: Plugin<'line'> = {
       };
 
       for (let i = 0; i < labels.length; i++) {
-        const t = labels[i].getTime();
-        const x = scales.x.getPixelForValue(t);
         const active = activityArr[i] === 1;
-
         if (active && startX === null) {
-          startX = x;
+          startX = scales.x.getPixelForValue(labels[i].getTime());
         } else if (!active && startX !== null) {
-          drawRect(startX, x);
+          drawRect(startX, scales.x.getPixelForValue(labels[i].getTime()));
           startX = null;
         }
       }
@@ -426,6 +425,8 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
+      normalized: true,
       onClick: handleChartClick,
       interaction: { intersect: false, mode: 'index' },
       plugins: {
@@ -471,6 +472,11 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
           gasActivity,             // number[] 0/1
         },
 
+        decimation: {
+          enabled: true,
+          algorithm: 'min-max',
+          samples: 500,
+        },
         zoom: {
           zoom: {
             wheel: { enabled: !isMarkingMode },
