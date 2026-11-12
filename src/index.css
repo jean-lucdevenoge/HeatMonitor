@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.chart-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 700px;
+}

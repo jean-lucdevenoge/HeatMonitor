@@ -342,11 +342,11 @@ export const Dashboard: React.FC = () => {
             <MetricsCards metrics={metrics} />
 
             <div className="grid grid-cols-1 gap-8">
-              <SolarActivityChart data={heatingData} />
-              <EnergyChart data={heatingData} />
-              <GasPowerChart data={heatingData} />
-              <CombinedPowerChart data={heatingData} />
-              <HouseHeatingChart data={heatingData} />
+              <div className="chart-section"><SolarActivityChart data={heatingData} /></div>
+              <div className="chart-section"><EnergyChart data={heatingData} /></div>
+              <div className="chart-section"><GasPowerChart data={heatingData} /></div>
+              <div className="chart-section"><CombinedPowerChart data={heatingData} /></div>
+              <div className="chart-section"><HouseHeatingChart data={heatingData} /></div>
             </div>
           </div>
         ) : !isLoading && !error && (

@@ -12,6 +12,7 @@ import {
   ChartOptions,
   Plugin,
   Filler,
+  Decimation,
 } from 'chart.js';
 import { getRelativePosition } from 'chart.js/helpers';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -30,7 +31,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   zoomPlugin,
-  Filler
+  Filler,
+  Decimation
 );
 
 interface HouseHeatingChartProps {
@@ -63,14 +65,11 @@ const houseHeatingBackgroundPlugin: Plugin<'line'> = {
     };
 
     for (let i = 0; i < labels.length; i++) {
-      const t = labels[i].getTime();
-      const x = scales.x.getPixelForValue(t);
       const isActive = activity[i] === 1;
-
       if (isActive && activeStartX === null) {
-        activeStartX = x;
+        activeStartX = scales.x.getPixelForValue(labels[i].getTime());
       } else if (!isActive && activeStartX !== null) {
-        drawSpan(activeStartX, x);
+        drawSpan(activeStartX, scales.x.getPixelForValue(labels[i].getTime()));
         activeStartX = null;
       }
     }
@@ -331,7 +330,7 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
       datasets: [
         {
           label: t('chart.houseHeatingPower'),
-          data: houseHeatingPower,
+          data: houseHeatingPower.map((value, index) => ({ x: chartLabels[index].getTime(), y: value })),
           borderColor: '#3B82F6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           borderWidth: 1,
@@ -348,6 +347,9 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
+      normalized: true,
+      parsing: false,
       onClick: handleChartClick,
       interaction: { intersect: false, mode: 'index' },
       plugins: {
@@ -400,6 +402,11 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           activity: houseHeatingActivity
         },
 
+        decimation: {
+          enabled: true,
+          algorithm: 'min-max',
+          samples: 500,
+        },
         zoom: {
           zoom: {
             wheel: { enabled: !isMarkingMode },
