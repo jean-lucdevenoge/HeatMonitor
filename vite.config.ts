@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon-16x16-v2.png', 'favicon-32x32-v2.png', 'apple-touch-icon-v2.png'],
+      includeAssets: ['favicon-16x16-v3.png', 'favicon-32x32-v3.png', 'apple-touch-icon-v3.png'],
       manifest: {
         name: 'Heating System Dashboard',
         short_name: 'Heating',
@@ -21,17 +21,17 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/pwa-192x192-v2.png',
+            src: '/pwa-192x192-v3.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/pwa-512x512-v2.png',
+            src: '/pwa-512x512-v3.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: '/pwa-maskable-512x512-v2.png',
+            src: '/pwa-maskable-512x512-v3.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
