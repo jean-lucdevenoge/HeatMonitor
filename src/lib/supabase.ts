@@ -4,7 +4,22 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  const missing = [
+    !supabaseUrl && 'VITE_SUPABASE_URL',
+    !supabaseAnonKey && 'VITE_SUPABASE_PUBLISHABLE_KEY',
+  ].filter(Boolean).join(', ');
+
+  const root = document.getElementById('root');
+  if (root) {
+    root.innerHTML = `
+      <div style="font-family: system-ui, sans-serif; max-width: 640px; margin: 80px auto; padding: 24px; color: #1f2937;">
+        <h1 style="color: #dc2626; font-size: 24px; margin-bottom: 12px;">Configuration Error</h1>
+        <p style="font-size: 16px; line-height: 1.5;">The app could not start because the following environment variable(s) are missing: <strong>${missing}</strong>.</p>
+        <p style="font-size: 16px; line-height: 1.5; color: #6b7280;">If this is a deployed build, make sure these are set as secrets in your GitHub repository settings (Settings &rarr; Secrets and variables &rarr; Actions).</p>
+      </div>
+    `;
+  }
+  throw new Error(`Missing Supabase environment variables: ${missing}`);
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
