@@ -5,6 +5,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { HouseHeatingAnalyticsDashboard } from './components/HouseHeatingAnalyticsDashboard';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { DataProvider } from './contexts/DataContext';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 function App() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -46,6 +47,7 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Header onSectionChange={setActiveSection} activeSection={activeSection} />
           {renderContent()}
+          <PWAInstallPrompt />
         </div>
       </DataProvider>
     </LanguageProvider>
