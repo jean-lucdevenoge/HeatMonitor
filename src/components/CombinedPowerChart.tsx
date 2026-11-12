@@ -400,7 +400,7 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
       datasets: [
         {
           label: t('chart.solarPower'),
-          data: solarPower,
+          data: solarPower.map((value, index) => ({ x: chartLabels[index].getTime(), y: value })),
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           borderWidth: 1,
@@ -409,7 +409,7 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
         },
         {
           label: t('chart.gasPower'),
-          data: gasPower,
+          data: gasPower.map((value, index) => ({ x: chartLabels[index].getTime(), y: value })),
           borderColor: '#DC2626',
           backgroundColor: 'rgba(220, 38, 38, 0.1)',
           borderWidth: 1,
@@ -427,6 +427,7 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
       maintainAspectRatio: false,
       animation: false,
       normalized: true,
+      parsing: false,
       onClick: handleChartClick,
       interaction: { intersect: false, mode: 'index' },
       plugins: {

@@ -361,7 +361,7 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
       datasets: [
         {
           label: t('chart.solarPower'),
-          data: solarPower,
+          data: solarPower.map((value, index) => ({ x: chartLabels[index].getTime(), y: value })),
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           borderWidth: 1,
@@ -371,7 +371,7 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
         },
         {
           label: t('chart.tempDiffB6B31'),
-          data: tempDifferences,
+          data: tempDifferences.map((value, index) => ({ x: chartLabels[index].getTime(), y: value })),
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           borderWidth: 1,
@@ -390,6 +390,7 @@ export const EnergyChart: React.FC<EnergyChartProps> = ({ data }) => {
       maintainAspectRatio: false,
       animation: false,
       normalized: true,
+      parsing: false,
       onClick: handleChartClick,
       interaction: {
         intersect: false,

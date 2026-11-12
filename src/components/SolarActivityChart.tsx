@@ -216,7 +216,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
       datasets: [
         {
           label: t('chart.collectorTempB6'),
-          data: sampledData.map((d) => d.collectorTemp),
+          data: sampledData.map((d, index) => ({ x: chartLabels[index].getTime(), y: d.collectorTemp })),
           borderColor: '#EAB308',
           backgroundColor: 'rgba(234, 179, 8, 0.1)',
           borderWidth: 1,
@@ -225,7 +225,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
         },
         {
           label: t('chart.dhwTemp'),
-          data: sampledData.map((d) => d.dhwTempTop),
+          data: sampledData.map((d, index) => ({ x: chartLabels[index].getTime(), y: d.dhwTempTop })),
           borderColor: '#DC2626',
           backgroundColor: 'rgba(220, 38, 38, 0.1)',
           borderWidth: 1,
@@ -234,7 +234,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
         },
         {
           label: t('chart.b31Temp'),
-          data: sampledData.map((d) => d.sensorTemp),
+          data: sampledData.map((d, index) => ({ x: chartLabels[index].getTime(), y: d.sensorTemp })),
           borderColor: '#8B5CF6',
           backgroundColor: 'rgba(139, 92, 246, 0.1)',
           borderWidth: 1,
@@ -252,6 +252,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
       maintainAspectRatio: false,
       animation: false,
       normalized: true,
+      parsing: false,
       onClick: handleChartClick,
       interaction: {
         intersect: false,

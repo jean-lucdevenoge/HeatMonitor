@@ -325,7 +325,7 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
       datasets: [
         {
           label: t('chart.gasPower'),
-          data: gasPower,
+          data: gasPower.map((value, index) => ({ x: chartLabels[index].getTime(), y: value })),
           borderColor: '#DC2626',
           backgroundColor: 'rgba(220, 38, 38, 0.1)',
           borderWidth: 1,
@@ -344,6 +344,7 @@ export const GasPowerChart: React.FC<GasPowerChartProps> = ({ data }) => {
       maintainAspectRatio: false,
       animation: false,
       normalized: true,
+      parsing: false,
       onClick: handleChartClick,
       interaction: { intersect: false, mode: 'index' },
       plugins: {
