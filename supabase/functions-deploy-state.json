@@ -3,19 +3,19 @@
   "functions": {
     "calculate-house-heating": {
       "hasChanged": false,
-      "hash": "1bf977b5e075f2e15a2358a41da9803b193d20f805da64386650922206707934"
+      "hash": "5c5fb0382d83bc7fd131be756b38d18eed3da2f75f1debe13507c1dda7da558e"
     },
     "daily-data-collection": {
       "hasChanged": false,
-      "hash": "6495c509abac4b57f12b40d674fe8f1cbda4141e2d3bb58162147bbfbc2ced79"
-    },
-    "nightly-email-import": {
-      "hasChanged": false,
-      "hash": "1258625fc37a750dc3adb918e268b7a943cc208450efaebec66a12b69eca733c"
+      "hash": "8eab517bf5a6fb7202c4bf49e628243d05824e65c6290aee1d2facb4f68a16e6"
     },
     "data-writes": {
       "hasChanged": false,
-      "hash": "f5a4db64807cc23a33607efc9aab304d62c0bd69dd169b4bcaabcfc7c6d46b02"
+      "hash": "7928322661a2e76906aebe51ada51a18c49be7076877d576b11b493a5a81acb4"
+    },
+    "nightly-email-import": {
+      "hasChanged": false,
+      "hash": "0a3fb50c6dc3aaac988a22d4e448c45b5c9987a2140a8b2b1ba5d2d7cf2ae3c8"
     }
   }
 }

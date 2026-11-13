@@ -15,6 +15,17 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (req.method !== "POST" || !serviceRoleKey || req.headers.get("Authorization") !== `Bearer ${serviceRoleKey}`) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+
   try {
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
