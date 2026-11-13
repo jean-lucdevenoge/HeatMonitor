@@ -29,9 +29,9 @@ export const MonthlyEnergyChart: React.FC<MonthlyEnergyChartProps> = ({ energyDa
     const monthlyMap = new Map<string, MonthlyData>();
 
     energyData.forEach(day => {
-      const date = new Date(day.date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthLabel = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+      const [y, m] = day.date.split('-');
+      const monthKey = `${y}-${m}`;
+      const monthLabel = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 
       if (!monthlyMap.has(monthKey)) {
         monthlyMap.set(monthKey, {

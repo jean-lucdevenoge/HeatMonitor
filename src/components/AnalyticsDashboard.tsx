@@ -134,12 +134,8 @@ export const AnalyticsDashboard: React.FC = () => {
 
   // Prepare chart data
   const chartLabels = energyData.map(day => {
-    try {
-      const date = new Date(day.date);
-      return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-    } catch {
-      return day.date;
-    }
+    const [y, m, d] = day.date.split('-');
+    return `${d}/${m}`;
   });
 
   // Energy trend chart data
@@ -296,7 +292,8 @@ export const AnalyticsDashboard: React.FC = () => {
           title: (items: any) => {
             const day = energyData[items[0].dataIndex];
             if (!day) return '';
-            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const [yy, mm, dd] = day.date.split('-');
+            return `${dd} ${new Date(parseInt(yy), parseInt(mm) - 1).toLocaleDateString('en-GB', { month: 'short' })} ${yy}`;
           },
         },
       },
@@ -336,7 +333,8 @@ export const AnalyticsDashboard: React.FC = () => {
           title: (items: any) => {
             const day = energyData[items[0].dataIndex];
             if (!day) return '';
-            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const [yy2, mm2, dd2] = day.date.split('-');
+            return `${dd2} ${new Date(parseInt(yy2), parseInt(mm2) - 1).toLocaleDateString('en-GB', { month: 'short' })} ${yy2}`;
           },
         },
       },
@@ -371,7 +369,8 @@ export const AnalyticsDashboard: React.FC = () => {
           title: (items: any) => {
             const day = energyData[items[0].dataIndex];
             if (!day) return '';
-            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const [yy, mm, dd] = day.date.split('-');
+            return `${dd} ${new Date(parseInt(yy), parseInt(mm) - 1).toLocaleDateString('en-GB', { month: 'short' })} ${yy}`;
           },
         },
       },
@@ -424,7 +423,8 @@ export const AnalyticsDashboard: React.FC = () => {
           title: (items: any) => {
             const day = energyData[items[0].dataIndex];
             if (!day) return '';
-            return new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const [yy, mm, dd] = day.date.split('-');
+            return `${dd} ${new Date(parseInt(yy), parseInt(mm) - 1).toLocaleDateString('en-GB', { month: 'short' })} ${yy}`;
           },
         },
       },
@@ -446,16 +446,8 @@ export const AnalyticsDashboard: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch {
-      return dateStr;
-    }
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
   };
 
   const getSortIcon = (field: keyof EnergyCalculation) => {
