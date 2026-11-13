@@ -324,11 +324,30 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
       scales: {
         x: {
           type: 'time',
-          reverse: true,
+          reverse: false,
           time: {
             displayFormats: {
               hour: 'HH:mm',
-              day: 'MMM dd',
+              day: 'dd MMM',
+            },
+          },
+          ticks: {
+            autoSkip: true,
+            maxRotation: 45,
+            minRotation: 45,
+            callback: (value: string | number) => {
+              const tickDate = new Date(Number(value));
+              if (tickDate.getHours() === 0 && tickDate.getMinutes() === 0) {
+                return tickDate.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                });
+              }
+              return tickDate.toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              });
             },
           },
           grid: { color: 'rgba(0, 0, 0, 0.1)' },
