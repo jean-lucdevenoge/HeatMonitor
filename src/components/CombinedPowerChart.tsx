@@ -450,12 +450,12 @@ export const CombinedPowerChart: React.FC<CombinedPowerChartProps> = ({ data }) 
           borderWidth: 1,
           callbacks: {
             title: (items: any) => {
-              const d = chartLabels[items[0].dataIndex];
+              const d = new Date(items[0].parsed.x);
               if (!d) return '';
               return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             },
             afterTitle: (items: any) => {
-              const i = items[0].dataIndex;
+              const i = chartLabels.findIndex((l) => l.getTime() === items[0].parsed.x);
               const s = solarActivity[i] === 1;
               const g = gasActivity[i] === 1;
               if (s && g) return '🌞🔥 Solar + Gas: Active';

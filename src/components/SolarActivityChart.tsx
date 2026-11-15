@@ -281,12 +281,12 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
           borderWidth: 1,
           callbacks: {
             title: (items: any) => {
-              const d = chartLabels[items[0].dataIndex];
+              const d = new Date(items[0].parsed.x);
               if (!d) return '';
               return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             },
             afterTitle: (tooltipItems: any) => {
-              const index = tooltipItems[0].dataIndex;
+              const index = chartLabels.findIndex((l) => l.getTime() === tooltipItems[0].parsed.x);
               const isActive = solarActivity[index] === 1;
               return isActive ? '🌞 Solar: Active' : '🌙 Solar: Inactive';
             },

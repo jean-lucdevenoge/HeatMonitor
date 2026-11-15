@@ -372,14 +372,14 @@ export const HouseHeatingChart: React.FC<HouseHeatingChartProps> = ({ data }) =>
           borderWidth: 1,
           callbacks: {
             title: (items: any) => {
-              const d = chartLabels[items[0].dataIndex];
+              const d = new Date(items[0].parsed.x);
               if (!d) return '';
               return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             },
             afterTitle: (items: any) => {
              if (!items || items.length === 0) return '';
-             const i = items[0].dataIndex;
-             if (i >= sampledData.length) return '';
+             const i = chartLabels.findIndex((l) => l.getTime() === items[0].parsed.x);
+             if (i < 0 || i >= sampledData.length) return '';
              
                 const data = sampledData[i];
                 const isDhwPumpOff = data.dhwPump === 'Off' || data.dhwPump === '' || data.dhwPump !== 'On';
