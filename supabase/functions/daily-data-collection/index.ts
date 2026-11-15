@@ -13,7 +13,23 @@ serve(async (req) => {
   }
 
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  if (req.method !== 'POST' || !serviceRoleKey || req.headers.get('Authorization') !== `Bearer ${serviceRoleKey}`) {
+  const projectRef = (Deno.env.get('SUPABASE_URL') ?? '').split('//')[1]?.split('.')[0] ?? ''
+  const authHeader = req.headers.get('Authorization') ?? ''
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+
+  let authorized = false
+  if (bearer && serviceRoleKey && bearer === serviceRoleKey) {
+    authorized = true
+  } else if (bearer && projectRef) {
+    try {
+      const payload = JSON.parse(atob(bearer.split('.')[1]))
+      if (payload.ref === projectRef && (payload.role === 'anon' || payload.role === 'service_role')) {
+        authorized = true
+      }
+    } catch { /* malformed JWT */ }
+  }
+
+  if (req.method !== 'POST' || !authorized) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

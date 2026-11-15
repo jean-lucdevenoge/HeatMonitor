@@ -3,15 +3,15 @@
   "functions": {
     "calculate-house-heating": {
       "hasChanged": false,
-      "hash": "5c5fb0382d83bc7fd131be756b38d18eed3da2f75f1debe13507c1dda7da558e"
+      "hash": "214e913cdcd0011cc2fdcf5c7f263401c66f8e8914c2cf9dc24dc33f8edd695c"
     },
     "daily-data-collection": {
       "hasChanged": false,
-      "hash": "8eab517bf5a6fb7202c4bf49e628243d05824e65c6290aee1d2facb4f68a16e6"
+      "hash": "38274febf88873ddf24ed4d5709421c201c59e4f16055a15398f9668ead38431"
     },
     "data-writes": {
       "hasChanged": false,
-      "hash": "7928322661a2e76906aebe51ada51a18c49be7076877d576b11b493a5a81acb4"
+      "hash": "77629023dc0a4cab50f8c7a0bf982ffa6a718ef8a667d78ece1d173f43d8dcc6"
     },
     "nightly-email-import": {
       "hasChanged": false,

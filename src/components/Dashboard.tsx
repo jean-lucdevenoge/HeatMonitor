@@ -21,7 +21,8 @@ export const Dashboard: React.FC = () => {
     heatingDataLoaded,
     setHeatingDataCache,
     isDataLoadedForRange,
-    currentDateRange
+    currentDateRange,
+    clearCache
   } = useData();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -36,23 +37,27 @@ export const Dashboard: React.FC = () => {
   // Initialize date filter to last 5 days only on first load
   useEffect(() => {
     if (!isInitialized) {
-      // Check if we have a current date range from previous navigation
-      if (currentDateRange) {
-        // Restore the previous filter
+      const today = new Date().toISOString().split('T')[0];
+      const fiveDaysAgo = new Date();
+      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+      const fiveDaysAgoStr = fiveDaysAgo.toISOString().split('T')[0];
+
+      // Restore previous range only if its end date is today (still fresh).
+      // If stale (cached from a previous day), reset to last 5 days so new
+      // data is always visible when the user opens the dashboard.
+      if (currentDateRange && currentDateRange.endDate === today) {
         setStartDate(currentDateRange.startDate);
         setEndDate(currentDateRange.endDate);
         setPendingStartDate(currentDateRange.startDate);
         setPendingEndDate(currentDateRange.endDate);
       } else {
-        // Set default to last 5 days only on first visit
-        const today = new Date();
-        const fiveDaysAgo = new Date(today);
-        fiveDaysAgo.setDate(today.getDate() - 5);
-        
-        setEndDate(today.toISOString().split('T')[0]);
-        setStartDate(fiveDaysAgo.toISOString().split('T')[0]);
-        setPendingEndDate(today.toISOString().split('T')[0]);
-        setPendingStartDate(fiveDaysAgo.toISOString().split('T')[0]);
+        // Cached range is stale (from a previous day). Reset to last 5 days
+        // and clear the cache so the auto-load effect fetches fresh data.
+        setEndDate(today);
+        setStartDate(fiveDaysAgoStr);
+        setPendingEndDate(today);
+        setPendingStartDate(fiveDaysAgoStr);
+        clearCache();
       }
       setIsInitialized(true);
     }
