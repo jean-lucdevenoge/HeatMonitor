@@ -34,7 +34,11 @@ serve(async (req) => {
   }
 
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  if (req.method !== 'POST' || !serviceRoleKey || req.headers.get('Authorization') !== `Bearer ${serviceRoleKey}`) {
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+  const authHeader = req.headers.get('Authorization') ?? ''
+  const isServiceRole = serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`
+  const isAnonCron = anonKey && authHeader === `Bearer ${anonKey}`
+  if (!isServiceRole && !isAnonCron) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
