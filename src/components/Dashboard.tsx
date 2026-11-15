@@ -18,11 +18,9 @@ export const Dashboard: React.FC = () => {
     metrics,
     dataCount,
     lastUpdated,
-    heatingDataLoaded,
     setHeatingDataCache,
     isDataLoadedForRange,
     currentDateRange,
-    clearCache
   } = useData();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -51,24 +49,23 @@ export const Dashboard: React.FC = () => {
         setPendingStartDate(currentDateRange.startDate);
         setPendingEndDate(currentDateRange.endDate);
       } else {
-        // Cached range is stale (from a previous day). Reset to last 5 days
-        // and clear the cache so the auto-load effect fetches fresh data.
         setEndDate(today);
         setStartDate(fiveDaysAgoStr);
         setPendingEndDate(today);
         setPendingStartDate(fiveDaysAgoStr);
-        clearCache();
       }
       setIsInitialized(true);
     }
   }, [currentDateRange, isInitialized]);
 
-  // Auto-load data only if not already loaded and dates are set
+  // Auto-load data when the current date range doesn't match what's cached.
+  // This ensures fresh data is always fetched on each visit, including after
+  // nightly imports add new days.
   useEffect(() => {
-    if (!heatingDataLoaded && startDate && endDate && !isLoading && isInitialized) {
+    if (startDate && endDate && !isLoading && isInitialized && !isDataLoadedForRange(startDate, endDate)) {
       loadHeatingDataForRange(startDate, endDate);
     }
-  }, [heatingDataLoaded, startDate, endDate, isLoading, isInitialized]);
+  }, [startDate, endDate, isLoading, isInitialized, isDataLoadedForRange]);
 
   const loadHeatingDataForRange = async (start: string, end: string) => {
     setIsLoading(true);
