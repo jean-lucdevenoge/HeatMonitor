@@ -324,7 +324,7 @@ export const SolarActivityChart: React.FC<SolarActivityChartProps> = ({ data }) 
       scales: {
         x: {
           type: 'time',
-          reverse: false,
+          reverse: true,
           time: {
             displayFormats: {
               hour: 'HH:mm',
